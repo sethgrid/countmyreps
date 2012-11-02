@@ -1,6 +1,12 @@
 <?php
 
 // connect to db
+include("../db_connect.php");
+
+// grab logger and log the incoming data
+include("../logger.php");
+$Log = new Logger("/var/tmp/logs/parseapi.log");
+$Log->write("Logger Working?");
 
 // grab data
 
