@@ -6,7 +6,8 @@ include("../includes/db_connect.php");
 // grab logger and log the incoming data
 include("../includes/logger.php");
 $Log = new Logger("/var/tmp/logs/parseapi.log");
-$Log->write("Logger Working?");
+$Log->prefix("[parseapi post_data] ");
+$Log->write(print_r($_POST, true));
 
 // grab data
 
@@ -16,7 +17,3 @@ $Log->write("Logger Working?");
 
 // set response to 200
 
-// 0vKHZQ9_)GKi
-// sethammo_reps
-
-// sethammo_countmyreps

@@ -7,6 +7,7 @@ class Logger{
      */
     private $filename;
     private $fh;
+    private $prefix;
     private $msg;
 
     /**
@@ -20,13 +21,23 @@ class Logger{
     }
 
     /**
+     * prefix
+     * @param string $prefix The prefix that prepends every log entry
+     * @return void
+     */
+    function prefix($prefix = ""){
+        $this->prefix = $prefix;
+    }
+
+    /**
      * write
      * @param string $message The message to append to the file.
      * @return void
      * A newline is always appended at the end of the $message
      */
     function write($message = ""){
-        fwrite($this->fh, $message . "\n");
+	$now = date("Y-m-d H:i:s");
+        fwrite($this->fh, '[' . $now . '] ' . $this->prefix . $message . "\n");
     }
 
     /**
