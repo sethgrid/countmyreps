@@ -20,9 +20,11 @@ if (!$Data->is_valid()) {
 
 // post to db
 $model = new DataStore;
-if (!$model->user_exists($Data->from))
+
+if (!$model->user_exists($Data->from)){
     $model->create_user($Data->from);
 }
+
 $model->add_reps($Data->from, $Data->reps_hash);
 
 // set response to 200
