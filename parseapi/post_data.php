@@ -13,10 +13,14 @@ $Log->write(print_r($_POST, true));
 $to         = $_POST['to']; // TODO: situps-pushups-pullups@countmyreps.com will look in subject for 25, 20, 10 and assign accordingly
 $from       = get_email($_POST['from']);
 $reps_array = get_reps_array($_POST['subject']);
-
-$Log->write("From: $from\nReps: $reps_array[0], $reps_array[1], $reps_array[2]");
+$reps_hash  = Array('situps' => $reps_array[0], 'pushups' => $reps_array[1], 'pullups' => $reps_array[2]);
 
 // post to db
+$model = new DataStore;
+if (!$model->user_exists($from)){
+    $model->create_user($from);
+}
+$model->add_reps($from, $reps_hash);
 
 // set response to 200
 http_response_code(200);
