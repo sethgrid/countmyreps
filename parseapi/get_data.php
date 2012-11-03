@@ -8,23 +8,23 @@ $user = $_POST['email'];
 $user_id = $DataStore->user_exists($user);
 if ($user_id){
     $content = "<h3>Reps for $user</h3>";
-    $content .= "<table>";
+    $content .= "<table class='data'><th>Date/Time</th><th>Sit-ups</th><th>Push-ups</th><th>Pull-ups</th>";
     $all_records = $DataStore->get_all_records($user_id);
 
-    print_r($all_records);
-
-    foreach ($all_records as $date){
-        print_r ($date);
+    foreach ($all_records as $date => $exercises_array){
         $content .= "<tr><td>$date</td>";
-        foreach ($date as $exercise => $reps){
-            print_r ($exercise);
-            print_r ($reps);
-            $content .= "<td>$exersice: $reps</td>";
+	// because of nasty nesting in data array, we have to make two passes to insure correct order of results
+	foreach ($exercises_array as $index => $exercises){
+	    foreach($exercises as $exercise => $rep){
+		if ($exercise == "situps")  $situps  = $rep;
+		if ($exercise == "pushups") $pushups = $rep;
+		if ($exercise == "pullups") $pullups = $rep;
+	    }
         }
-        $content .= "/tr>";
+        $content .= "<td>$situps</td><td>$pushups</td><td>$pullups</td>";
+        $content .= "</tr>";
     }
     $cotent .= "</table>";
-
 }
 else{
     $content = "No User Found";
@@ -58,6 +58,12 @@ else{
             padding-top: 10px;
             color: #666362;
        }
+       table.data{
+	    margin: auto;
+	    text-align: center;
+	    border: 1px solid #C8C8C8;
+	    color: #666362;
+       }   
     </style>
 </head>
 <body>
