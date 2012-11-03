@@ -27,7 +27,7 @@ class DataStore
     /**
      * user_exists
      * @param  string $email The email address that is linked to the user adding reps
-     * @return bool          Returns true is user already exists, false otherwise
+     * @return int           Returns the user id or 0 for non-existent user
      */
     function user_exists($email){
         $query = $this->db->prepare("SELECT * FROM `user` WHERE `email` = :email");
@@ -35,10 +35,11 @@ class DataStore
         $query->execute();
 
         if ($query->rowCount()){
-            return true;
+            $record = $query->fetch();
+            return $record['id'];
         }
 
-        return false;
+        return 0;
     }
 
     /**
@@ -50,6 +51,35 @@ class DataStore
         $query = $this->db->prepare("INSERT INTO `user`(`email`) VALUES (:email)");
         $query->bindParam(":email", $email);
         $result = $query->execute();
+
+        if ($result){
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * add_reps
+     * @param  string $email    The email address associated to these reps we are adding
+     * @param  array  $rep_hash Array keys are the exercise, values are the rep count
+     * @return bool             True on success, false otherwise
+     * Example rep_hash:
+     * {'situps' => 36, 'pushups' => 24, 'pullups' => 12}
+     */
+    function add_reps($email, $rep_hash){
+        // grap the user_id
+        $user_id = $this->user_exists($email);
+
+        // put the exercises and reps into the db
+        $query = $this->db->prepare("INSERT INTO `reps` (`user_id`,`exercise`,`count`,`created_at`) VALUES (:user_id, :exercise, :count, NOW())");
+        $query->bindParam(":user_id", $user_id);
+        $query->bindParam(":exercise", $exercise);
+        $query->bindParam(":count", $reps);
+
+        foreach ($rep_hash as $exercise=>$reps){
+            $result = $query->execute();
+        }
 
         if ($result){
             return true;
