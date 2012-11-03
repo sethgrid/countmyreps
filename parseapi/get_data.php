@@ -11,9 +11,14 @@ if ($user_id){
     $content .= "<table>";
     $all_records = $DataStore->get_all_records($user_id);
 
+    print_r($all_records);
+
     foreach ($all_records as $date){
+        print_r ($date);
         $content .= "<tr><td>$date</td>";
         foreach ($date as $exercise => $reps){
+            print_r ($exercise);
+            print_r ($reps);
             $content .= "<td>$exersice: $reps</td>";
         }
         $content .= "/tr>";
