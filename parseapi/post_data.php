@@ -14,7 +14,7 @@ $to         = $_POST['to']; // TODO: situps-pushups-pullups@countmyreps.com will
 $from       = get_email($_POST['from']);
 $reps_array = get_reps_array($_POST['subject']);
 
-$Log->write("From: $from\nReps: $reps_array[0], $reps_array[1], $reps_array[2]";
+$Log->write("From: $from\nReps: $reps_array[0], $reps_array[1], $reps_array[2]");
 
 // post to db
 
