@@ -5,9 +5,21 @@ $DataStore = new DataStore;
 $content = '';
 
 $user = $_POST['email'];
+$user_id = $DataStore->user_exists($user);
+if ($user_id){
+    $content = "<h3>Reps for $user</h3>";
+    $content .= "<table>";
+    $all_records = $DataStore->get_all_records($user_id);
 
-if ($DataStore->user_exists($user)){
-    $content = "User Found";
+    foreach ($all_records as $date){
+        $content .= "<tr><td>$date</td>";
+        foreach ($date as $exercise => $reps){
+            $content .= "<td>$exersice: $reps</td>";
+        }
+        $content .= "/tr>";
+    }
+    $cotent .= "</table>";
+
 }
 else{
     $content = "No User Found";
@@ -38,7 +50,7 @@ else{
        div.inner{
             margin: auto;
             text-align: center;
-            padding-top: 300px;
+            padding-top: 10px;
             color: #666362;
        }
     </style>

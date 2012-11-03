@@ -87,4 +87,27 @@ class DataStore
 
         return false;
     }
+
+    /**
+     * get_all_records
+     * @param  int   $user_id the id of the user in the reps table
+     * @return array          array indexed by date, second index by exercise, value is reps
+     */
+    function get_all_records($user_id){
+        $query = $this->db->prepare("SELECT * FROM `reps` WHERE `user_id`=:user_id ORDER BY `created_at`");
+        $query->bindParam(":user_id", $user_id);
+        $query->execute();
+        $records = $query->fetchAll();
+
+        $return = Array();
+        // goal format for data:
+        // Array [date][types of exercise] => reps for that day
+        foreach ($records as $record){
+            $data = Array();
+            $data[$record['exercise']]    = $record['count'];
+            $return[$record['created_at'] = $data;           
+        }
+        
+        return $return;
+    }
 }
