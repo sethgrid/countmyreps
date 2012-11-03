@@ -104,10 +104,9 @@ class DataStore
         // Array [date][types of exercise] => reps for that day
         foreach ($records as $record){
             $data = Array();
-            $data[$record['exercise']]    = $record['count'];
-            $return[$record['created_at'] = $data;           
+            $data[$record['exercise']]       = $record['count'];
+            $return[$record['created_at']][] = $data;           
         }
-        
         return $return;
     }
 }
