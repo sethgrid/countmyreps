@@ -23,7 +23,7 @@ class ReceiveParseAPI
     function __construct($raw_post){
         $this->raw_post = $raw_post;
         $this->to = $raw_post['to'];
-        $this->from = $this->get_email($raw_post['from'];
+        $this->from = $this->get_email($raw_post['from']);
         $this->subject = $raw_post['subject'];
         $this->text = $raw_post['text'];
         $this->html = $raw_post['html'];
@@ -47,12 +47,24 @@ class ReceiveParseAPI
         
         // make sure that we are getting values for all the reps
         foreach ($this->reps_hash as $exercise => $reps){
-            if (!is_string($exercise) || !is_int($reps)){
+            if (!is_string($exercise) || !is_numeric($reps)){
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * lprint
+     * @param string $msg a message to be printed to logs
+     * @return void
+     * Used for debugging the class if needed
+     */
+    function lprint($msg){
+	require_once('Logger.php');
+	$Logger = new Logger("/var/tmp/logs/debug.log");
+	$Logger->write($msg);
     }
 
     /**
