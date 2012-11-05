@@ -41,7 +41,7 @@ class ReceiveParseAPI
      */
     function is_valid(){
         // make sure that we are receiving the right request
-        if ($this->to != 'situps-pushups-pullups@countmyreps.com'){
+        if (!strstr($this->to, 'situps-pushups-pullups@countmyreps.com')){
             return false;
         }
         
