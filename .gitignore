@@ -1,2 +1,4 @@
 .htaccess
+*.swp
+*.swo
 *.config
