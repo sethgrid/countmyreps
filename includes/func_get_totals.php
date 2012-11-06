@@ -14,7 +14,7 @@ function get_totals($data_array){
                 // formats of array coming in. 
                 if ($k2 == 'situps' and is_numeric($v2)) $return['situps'] += $v2;
                 else if ($k2 == 'pushups' and is_numeric($v2)) $return['pushups'] += $v2;
-                else if ($k2 == 'pullups' and is_numeric($v2)) $return['pushups'] += $v2;
+                else if ($k2 == 'pullups' and is_numeric($v2)) $return['pullups'] += $v2;
                 else{
                     $return['situps'] += $v2['situps'];
                     $return['pushups'] += $v2['pushups'];

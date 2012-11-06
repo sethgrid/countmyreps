@@ -76,7 +76,7 @@ class DataStore
         $query->bindParam(":user_id", $user_id);
         $query->bindParam(":exercise", $exercise);
         $query->bindParam(":count", $reps);
-	$query->bindParam(":date", date("Y-m-d H:i:s");
+	$query->bindParam(":date", date("Y-m-d H:i:s"));
 
         foreach ($rep_hash as $exercise=>$reps){
             $result = $query->execute();
