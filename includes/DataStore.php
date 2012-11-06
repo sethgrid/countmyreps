@@ -104,9 +104,11 @@ class DataStore
         // goal format for data:
         // Array [date][types of exercise] => reps for that day
         foreach ($records as $record){
-            $data = Array();
-            $data[$record['exercise']]       = $record['count'];
-            $return[$record['created_at']][] = $data;           
+            // get the date from the string (ie, text prior to the space)
+            $date = $record['created_at'];
+            $date = explode(" ", $date);
+            $date = $date[0];
+            $return[$date][$record['exercise']] += $record['count'];
         }
 
         return $return;
