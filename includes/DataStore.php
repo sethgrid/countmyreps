@@ -107,6 +107,26 @@ class DataStore
             $data[$record['exercise']]       = $record['count'];
             $return[$record['created_at']][] = $data;           
         }
+
+        return $return;
+    }
+
+    /**
+     * get_records_by_office
+     * @param  string $office The office of which the user is based (for office competitions)
+     * @return array          Array indexed by date, second index by exercise, value is reps
+     */
+    function get_records_by_office($office){
+        $query = $this->db->prepare("SELECT * FROM `reps` WHERE `office`=:office ORDER BY `created_at`");
+        $query->bindParam(":office", $office);
+        $query->execute();
+        $records = $query->fetchAll();
+
+        $return = Array();
+        foreach ($records as $record){
+            $return[$record['created_at'][$record['exercise']] += $record['count'];
+        }
+
         return $return;
     }
 }

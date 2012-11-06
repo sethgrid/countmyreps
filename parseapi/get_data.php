@@ -1,5 +1,6 @@
 <?php
 include("../includes/DataStore.php");
+include("../includes/func_get_totals.php");
 
 $DataStore = new DataStore;
 $content = '';
@@ -7,8 +8,9 @@ $content = '';
 $user = $_POST['email'];
 $user_id = $DataStore->user_exists($user);
 if ($user_id){
-    $content = "<h3>Reps for $user</h3>";
-    $content .= "<table class='data'><th>Date/Time</th><th>Sit-ups</th><th>Push-ups</th><th>Pull-ups</th>";
+    $header  = "<h3>Reps for $user</h3>";
+    $info    = "";
+    $content = "<table class='data'><th>Date/Time</th><th>Sit-ups</th><th>Push-ups</th><th>Pull-ups</th>";
     $all_records = $DataStore->get_all_records($user_id);
 
     foreach ($all_records as $date => $exercises_array){
@@ -25,6 +27,29 @@ if ($user_id){
         $content .= "</tr>";
     }
     $cotent .= "</table>";
+
+    // get total reps for the offices and the user
+    $stats_california  = $DataStore->get_records_by_office("california");
+    $stats_colorado    = $DataStore->get_records_by_office("colorado");
+
+    $your_totals       = get_totals($all_records);
+    $california_totals = get_totals($stats_california);
+    $colorado_totals   = get_totals($stats_colorado);
+
+    $info .= "Your Totals -- Situps: " . $your_totals['situps'] . 
+             ", Pushups: " . $your_totals['pushups'] . 
+             ", Pullups: " . $your_totals['pullups'] . 
+             "<br />";
+ 
+    $info .= "California Totals -- Situps: " . $california_totals['situps'] . 
+             ", Pushups: " . $california_totals['pushups'] . 
+             ", Pullups: " . $california_totals['pullups'] . 
+             "<br />";
+    
+    $info .= "Colorado Totals -- Situps: " . $colorado_totals['situps'] . 
+             ", Pushups: " . $colorado_totals['pushups'] . 
+             ", Pullups: " . $colorado_totals['pullups'] . 
+             "<br />";
 }
 else{
     $content = "No User Found";
@@ -71,7 +96,7 @@ else{
 <div class="center">
     <div class="inner">
     <?php
-        echo $content;
+        echo $header.$info.$content;
     ?>
     </div>
 </div>
