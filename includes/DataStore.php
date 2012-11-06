@@ -72,10 +72,11 @@ class DataStore
         $user_id = $this->user_exists($email);
 
         // put the exercises and reps into the db
-        $query = $this->db->prepare("INSERT INTO `reps` (`user_id`,`exercise`,`count`,`created_at`) VALUES (:user_id, :exercise, :count, NOW())");
+        $query = $this->db->prepare("INSERT INTO `reps` (`user_id`,`exercise`,`count`,`created_at`) VALUES (:user_id, :exercise, :count, :date)");
         $query->bindParam(":user_id", $user_id);
         $query->bindParam(":exercise", $exercise);
         $query->bindParam(":count", $reps);
+	$query->bindParam(":date", date("Y-m-d H:i:s");
 
         foreach ($rep_hash as $exercise=>$reps){
             $result = $query->execute();
@@ -117,14 +118,13 @@ class DataStore
      * @return array          Array indexed by date, second index by exercise, value is reps
      */
     function get_records_by_office($office){
-        $query = $this->db->prepare("SELECT * FROM `reps` WHERE `office`=:office ORDER BY `created_at`");
+        $query = $this->db->prepare("SELECT * FROM `reps` as r LEFT JOIN `user` as u on u.id=r.user_id WHERE `office`=:office ORDER BY `created_at`");
         $query->bindParam(":office", $office);
         $query->execute();
         $records = $query->fetchAll();
-
         $return = Array();
         foreach ($records as $record){
-            $return[$record['created_at'][$record['exercise']] += $record['count'];
+            $return[$record['created_at']][$record['exercise']] += $record['count'];
         }
 
         return $return;
