@@ -104,9 +104,19 @@ class DataStore
         // goal format for data:
         // Array [date][types of exercise] => reps for that day
         foreach ($records as $record){
-            $data = Array();
-            $data[$record['exercise']]       = $record['count'];
-            $return[$record['created_at']][] = $data;           
+            // get the date from the string (ie, text prior to the space)
+            $date = $record['created_at'];
+            $date = explode(" ", $date);
+            $date = $date[0];
+	    $today = date('Y-m-d');
+
+            // we want to show all of today's exercises by full time, everything else by day
+	    if ($date == $today){
+                $return[$record['created_at']][$record['exercise']] += $record['count'];
+            }
+            else{
+                $return[$date][$record['exercise']] += $record['count'];
+           }
         }
 
         return $return;
