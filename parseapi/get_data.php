@@ -89,6 +89,7 @@ else{
        td.cell{
             text-align: center;
             color: #666362;
+            vertical-align: top;
        }
        table.icky{
            margin: auto;
