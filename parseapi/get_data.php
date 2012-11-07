@@ -77,6 +77,7 @@ else{
        }
        p{
             color: #666362;
+            margin: auto;
        }
        table.data{
             display: inline;
@@ -85,8 +86,12 @@ else{
 	    border: 1px solid #C8C8C8;
 	    color: #666362;
        }   
-       div.inline{
-           display: inline;
+       td.cell{
+            text-align: center;
+            color: #666362;
+       }
+       table.icky{
+           margin: auto;
        }
     </style>
 </head>
@@ -97,11 +102,11 @@ else{
         <?php
             echo $header;
         ?>
-	<table>
+	<table class="icky">
 	<tr>
-		<td><?php echo $info_u.$user_reps_table;?></td>
-		<td><?php echo $info_ca.$california_reps_table;?></td>
-		<td><?php echo $info_co.$colorado_reps_table;?></td>
+		<td class="cell"><?php echo $info_u.$user_reps_table;?></td>
+		<td class="cell"><?php echo $info_ca.$california_reps_table;?></td>
+		<td class="cell"><?php echo $info_co.$colorado_reps_table;?></td>
 	</tr>
 	</table>
     </div>
