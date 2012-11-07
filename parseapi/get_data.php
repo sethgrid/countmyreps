@@ -1,7 +1,7 @@
 <?php
 include("../includes/DataStore.php");
 include("../includes/func_get_totals.php");
-include("../include/func_format_as_table.php");
+include("../includes/func_format_as_table.php");
 
 $DataStore = new DataStore;
 $content = '';
