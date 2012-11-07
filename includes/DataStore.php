@@ -90,11 +90,11 @@ class DataStore
     }
 
     /**
-     * get_all_records
+     * get_all_records_by_user
      * @param  int   $user_id the id of the user in the reps table
      * @return array          array indexed by date, second index by exercise, value is reps
      */
-    function get_all_records($user_id){
+    function get_all_records_by_user($user_id){
         $query = $this->db->prepare("SELECT * FROM `reps` WHERE `user_id`=:user_id ORDER BY `created_at`");
         $query->bindParam(":user_id", $user_id);
         $query->execute();
@@ -114,6 +114,31 @@ class DataStore
         return $return;
     }
 
+    /**
+     * get_all_records_by_office
+     * @param  int   $user_id the id of the user in the reps table
+     * @return array          array indexed by date, second index by exercise, value is reps
+     */
+    function get_all_records_by_office($office){
+        $query = $this->db->prepare("SELECT * FROM `reps`as r LEFT JOIN `user` as u on r.user_id=u.id WHERE u.office=:office ORDER BY r.created_at");
+        $query->bindParam(":office", $office);
+        $query->execute();
+        $records = $query->fetchAll();
+
+        $return = Array();
+        // goal format for data:
+        // Array [date][types of exercise] => reps for that day
+        foreach ($records as $record){
+            // get the date from the string (ie, text prior to the space)
+            $date = $record['created_at'];
+            $date = explode(" ", $date);
+            $date = $date[0];
+            $return[$date][$record['exercise']] += $record['count'];
+        }
+
+        return $return;
+    }
+    
     /**
      * get_records_by_office
      * @param  string $office The office of which the user is based (for office competitions)

@@ -1,32 +1,25 @@
 <?php
 include("../includes/DataStore.php");
 include("../includes/func_get_totals.php");
+include("../include/func_format_as_table.php");
 
 $DataStore = new DataStore;
 $content = '';
 
-$user = $_POST['email'];
+$user = $_GET['email'];
 $user_id = $DataStore->user_exists($user);
 if ($user_id){
     $header  = "<h3>Reps for $user</h3>";
     $info    = "";
-    $content = "<table class='data'><th>Date/Time</th><th>Sit-ups</th><th>Push-ups</th><th>Pull-ups</th>";
-    $all_records = $DataStore->get_all_records($user_id);
 
-    foreach ($all_records as $date => $exercises_array){
-        $content .= "<tr><td>$date</td>";
-	// because of nasty nesting in data array, we have to make two passes to insure correct order of results
-	foreach ($exercises_array as $index => $exercises){
-	    foreach($exercises as $exercise => $rep){
-		if ($exercise == "situps")  $situps  = $rep;
-		if ($exercise == "pushups") $pushups = $rep;
-		if ($exercise == "pullups") $pullups = $rep;
-	    }
-        }
-        $content .= "<td>$situps</td><td>$pushups</td><td>$pullups</td>";
-        $content .= "</tr>";
-    }
-    $cotent .= "</table>";
+    $all_records_user       = $DataStore->get_all_records_by_user($user_id);
+    $all_records_california = $DataStore->get_all_records_by_office('california');
+    $all_records_colorad0   = $DataStore->get_all_records_by_office('colorado');
+
+    $user_reps_table       = format_as_table($all_records_user);
+    $california_reps_table = format_as_table($all_records_california);
+    $colorado_reps_table   = format_as_table($all_records_colorado);
+
 
     // get total reps for the offices and the user
     $stats_california  = $DataStore->get_records_by_office("california");
@@ -35,6 +28,8 @@ if ($user_id){
     $your_totals       = get_totals($all_records);
     $california_totals = get_totals($stats_california);
     $colorado_totals   = get_totals($stats_colorado);
+
+    $content = $user_reps_table.$california_reps_table.$colorado_reps_table;
 
     $info .= "Your Totals -- Situps: " . $your_totals['situps'] . 
              ", Pushups: " . $your_totals['pushups'] . 
