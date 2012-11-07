@@ -108,7 +108,15 @@ class DataStore
             $date = $record['created_at'];
             $date = explode(" ", $date);
             $date = $date[0];
-            $return[$date][$record['exercise']] += $record['count'];
+	    $today = date('Y-m-d');
+
+            // we want to show all of today's exercises by full time, everything else by day
+	    if ($date == $today){
+                $return[$record['created_at']][$record['exercise']] += $record['count'];
+            }
+            else{
+                $return[$date][$record['exercise']] += $record['count'];
+           }
         }
 
         return $return;

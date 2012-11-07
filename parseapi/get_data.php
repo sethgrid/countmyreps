@@ -20,7 +20,6 @@ if ($user_id){
     $california_reps_table = format_as_table($all_records_california);
     $colorado_reps_table   = format_as_table($all_records_colorado);
 
-
     // get total reps for the offices and the user
     $stats_california  = $DataStore->get_records_by_office("california");
     $stats_colorado    = $DataStore->get_records_by_office("colorado");
