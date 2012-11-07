@@ -10,11 +10,10 @@ $user = $_GET['email'];
 $user_id = $DataStore->user_exists($user);
 if ($user_id){
     $header  = "<h3>Reps for $user</h3>";
-    $info    = "";
 
     $all_records_user       = $DataStore->get_all_records_by_user($user_id);
     $all_records_california = $DataStore->get_all_records_by_office('california');
-    $all_records_colorad0   = $DataStore->get_all_records_by_office('colorado');
+    $all_records_colorado   = $DataStore->get_all_records_by_office('colorado');
 
     $user_reps_table       = format_as_table($all_records_user);
     $california_reps_table = format_as_table($all_records_california);
@@ -24,26 +23,25 @@ if ($user_id){
     $stats_california  = $DataStore->get_records_by_office("california");
     $stats_colorado    = $DataStore->get_records_by_office("colorado");
 
-    $your_totals       = get_totals($all_records);
+    $your_totals       = get_totals($all_records_user);
     $california_totals = get_totals($stats_california);
     $colorado_totals   = get_totals($stats_colorado);
 
-    $content = $user_reps_table.$california_reps_table.$colorado_reps_table;
 
-    $info .= "Your Totals -- Situps: " . $your_totals['situps'] . 
-             ", Pushups: " . $your_totals['pushups'] . 
-             ", Pullups: " . $your_totals['pullups'] . 
-             "<br />";
+    $info_u = "<p>Your Totals --  " . $your_totals['situps'] . 
+             ", " . $your_totals['pushups'] . 
+             ", " . $your_totals['pullups'] . 
+             "<br /></p>";
  
-    $info .= "California Totals -- Situps: " . $california_totals['situps'] . 
-             ", Pushups: " . $california_totals['pushups'] . 
-             ", Pullups: " . $california_totals['pullups'] . 
-             "<br />";
+    $info_ca = "<p>California Totals --  " . $california_totals['situps'] . 
+             ", " . $california_totals['pushups'] . 
+             ", " . $california_totals['pullups'] . 
+             "<br /></p>";
     
-    $info .= "Colorado Totals -- Situps: " . $colorado_totals['situps'] . 
-             ", Pushups: " . $colorado_totals['pushups'] . 
-             ", Pullups: " . $colorado_totals['pullups'] . 
-             "<br />";
+    $info_co = "<p>Colorado Totals -- " . $colorado_totals['situps'] . 
+             ", " . $colorado_totals['pushups'] . 
+             ", " . $colorado_totals['pullups'] . 
+             "<br /></p>";
 }
 else{
     $content = "No User Found";
@@ -66,7 +64,7 @@ else{
         div.center{
             margin: auto;
             background-color: white;
-            width: 800px; 
+            width: 1200px; 
             border: 1px solid #C8C8C8; 
             padding-top: 10px;
             padding-bottom: 20px;
@@ -77,21 +75,35 @@ else{
             padding-top: 10px;
             color: #666362;
        }
+       p{
+            color: #666362;
+       }
        table.data{
+            display: inline;
 	    margin: auto;
 	    text-align: center;
 	    border: 1px solid #C8C8C8;
 	    color: #666362;
        }   
+       div.inline{
+           display: inline;
+       }
     </style>
 </head>
 <body>
 
 <div class="center">
     <div class="inner">
-    <?php
-        echo $header.$info.$content;
-    ?>
+        <?php
+            echo $header;
+        ?>
+	<table>
+	<tr>
+		<td><?php echo $info_u.$user_reps_table;?></td>
+		<td><?php echo $info_ca.$california_reps_table;?></td>
+		<td><?php echo $info_co.$colorado_reps_table;?></td>
+	</tr>
+	</table>
     </div>
 </div>
 
