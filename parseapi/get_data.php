@@ -27,21 +27,27 @@ if ($user_id){
     $california_totals = get_totals($stats_california);
     $colorado_totals   = get_totals($stats_colorado);
 
+    $your_grand_total = array_sum($your_totals);
+    $cal_grand_total  = array_sum($california_totals);
+    $col_grand_total  = array_sum($colorado_totals);
+    $grand_total      = $your_grand_total + $cal_grand_total + $col_grand_total;
+
+    $header .= 'Company total: ' . $grand_total;
 
     $info_u = "<p>Your Totals --  " . $your_totals['situps'] . 
              ", " . $your_totals['pushups'] . 
              ", " . $your_totals['pullups'] . 
-             "<br /></p>";
+             "<br />Total: $your_grand_total</p>";
  
     $info_ca = "<p>California Totals --  " . $california_totals['situps'] . 
              ", " . $california_totals['pushups'] . 
              ", " . $california_totals['pullups'] . 
-             "<br /></p>";
+             "<br />Total: $cal_grand_total</p>";
     
     $info_co = "<p>Colorado Totals -- " . $colorado_totals['situps'] . 
              ", " . $colorado_totals['pushups'] . 
              ", " . $colorado_totals['pullups'] . 
-             "<br /></p>";
+             "<br />Total: $col_grand_total</p>";
 }
 else{
     $content = "No User Found";
