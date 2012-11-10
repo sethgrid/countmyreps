@@ -1,7 +1,5 @@
 <?php
 
-include ('sendgrid-php/SendGrid_loader.php');
-
 /**
  * send_email_error
  * @param  string  $user_email   The user who sent the email to CountMyReps
