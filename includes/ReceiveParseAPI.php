@@ -1,5 +1,5 @@
 <?php
-
+include ('func_send_email_error.php');
 class ReceiveParseAPI
 {
     /**
@@ -21,18 +21,18 @@ class ReceiveParseAPI
      * TODO: have the to address specify the exercises that will be added (keys) and the subject have the values
      */
     function __construct($raw_post){
-        $this->raw_post = $raw_post;
-        $this->to = $raw_post['to'];
-        $this->from = $this->get_email($raw_post['from']);
-        $this->subject = $raw_post['subject'];
-        $this->text = $raw_post['text'];
-        $this->html = $raw_post['html'];
+        $this->raw_post   = $raw_post;
+        $this->to         = $raw_post['to'];
+        $this->from       = $this->get_email($raw_post['from']);
+        $this->subject    = $raw_post['subject'];
+        $this->text       = $raw_post['text'];
+        $this->html       = $raw_post['html'];
         $this->reps_array = $this->get_reps_array($raw_post['subject']);
-        $this->reps_hash = Array(
-                             'situps'  => $this->reps_array[0], 
-                             'pushups' => $this->reps_array[1], 
-                             'pullups' => $this->reps_array[2]
-                           );
+        $this->reps_hash  = Array(
+                              'situps'  => $this->reps_array[0], 
+                              'pushups' => $this->reps_array[1], 
+                              'pullups' => $this->reps_array[2]
+                            );
     }
 
     /**
@@ -42,12 +42,14 @@ class ReceiveParseAPI
     function is_valid(){
         // make sure that we are receiving the right request
         if (!strstr($this->to, 'situps-pushups-pullups@countmyreps.com')){
+	    $this->send_error();
             return false;
         }
         
         // make sure that we are getting values for all the reps
         foreach ($this->reps_hash as $exercise => $reps){
             if (!is_string($exercise) || !is_numeric($reps)){
+                $this->send_error();
                 return false;
             }
         }
@@ -97,5 +99,15 @@ class ReceiveParseAPI
      */
     function get_reps_array($reps){
         return explode(",", $reps);
+    }
+
+    /**
+     * send_error
+     * @return void
+     */
+    function send_error(){
+	// from is the person who sent the email we recieved (ie, the sender who sent to us; the person to which we need to kick the error)
+ 	// to is the address they sent to (on our end)
+	send_email_error($this->from, $this->to, $this->subject, date("Y-m-d H:i:s");
     }
 }
