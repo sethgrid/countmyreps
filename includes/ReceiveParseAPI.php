@@ -38,6 +38,7 @@ class ReceiveParseAPI
     /**
      * is_valid
      * @return bool Returns false if it is the wrong to address or if there are missing values for rep counts
+     * Sends out an error message to the user who sent in an invalid email via email
      */
     function is_valid(){
         // make sure that we are receiving the right request
@@ -109,5 +110,6 @@ class ReceiveParseAPI
 	// from is the person who sent the email we recieved (ie, the sender who sent to us; the person to which we need to kick the error)
  	// to is the address they sent to (on our end)
 	send_email_error($this->from, $this->to, $this->subject, date("Y-m-d H:i:s"));
+	send_email_error(getenv('HTTP_MY_EMAIL'), $this->to, $this->subject . " (from $this->from)", date("Y-m-d H:i:s"));
     }
 }
