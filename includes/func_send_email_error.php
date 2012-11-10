@@ -51,6 +51,5 @@ function send_email_error($user_email, $addressed_to, $subject, $time){
         // close cURL resource, and free up system resources
         curl_close($ch);
 
-        print $result;
 	return;
 }
