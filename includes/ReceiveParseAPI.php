@@ -13,6 +13,7 @@ class ReceiveParseAPI
     public $from;
     public $subject;
     public $body;
+    public $error;
 
     /**
      * constructor
@@ -43,13 +44,15 @@ class ReceiveParseAPI
     function is_valid(){
         // make sure that we are receiving the right request
         if (!strstr($this->to, 'situps-pushups-pullups@countmyreps.com')){
-	    $this->send_error();
+	    $this->error = "Incorrect address";
+            $this->send_error();
             return false;
         }
         
         // make sure that we are getting values for all the reps
         foreach ($this->reps_hash as $exercise => $reps){
             if (!is_string($exercise) || !is_numeric($reps)){
+		$this->error = "Non numeric rep encountered";
                 $this->send_error();
                 return false;
             }

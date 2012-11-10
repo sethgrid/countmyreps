@@ -1,5 +1,5 @@
 <?php
-
+require_once ("Logger.php");
 /**
  * send_email_error
  * @param  string  $user_email   The user who sent the email to CountMyReps
@@ -10,7 +10,11 @@
  * This function makes use of the SendGrid PHP library and uses their Web API rather than SMTP
  */
 function send_email_error($user_email, $addressed_to, $subject, $time){
-        // format $message to text/html value
+        $Log = new Logger("/var/tmp/logs/parseapi.log");
+	$Log->prefix("[send email error] ");
+	$Log->write("crafting email to $user_email");
+	
+	// format $message to text/html value
         $msg  = "There was an error with your CountMyReps Submission.\n";
         $msg .= "Make sure that you addressed your email to situps-pushups-pullups@countmyreps.com.\n";
         $msg .= "Make sure that your subject line was three numbers separated by commas, like: 24, 12, 6\n";
@@ -26,14 +30,16 @@ function send_email_error($user_email, $addressed_to, $subject, $time){
         $sg_username = urlencode(getenv('HTTP_SG_USERNAME'));
         $sg_password = urlencode(getenv('HTTP_SG_PASSWORD'));
 	$text_message = urlencode($text_message);
+	$subject = urlencode($subject);
+	if (!$subject) $subject = "missing";
 
         // make a curl request over SendGrid's web api
         $url =  "https://sendgrid.com/api/mail.send.json?" . 
                 "api_user=$sg_username" .
                 "&api_key=$sg_password" . 
-                "&to=$user_email" . 
-                "&subject=$subject" . 
-                "&text=$text_message" .
+		"&to=$user_email" . 
+		"&subject=" . trim($subject) . 
+                "&text=" . trim($text_message) .
                 "&from=error@countmyreps.com";
 
         // create a new cURL resource
@@ -46,7 +52,10 @@ function send_email_error($user_email, $addressed_to, $subject, $time){
         
 	// grab URL and pass it to the browser
         $result = curl_exec($ch);
-
+	$Log->write($result);
+	if (!strstr($result, '{"message":"success"}')){
+		$Log->write($url);
+	}
         // close cURL resource, and free up system resources
         curl_close($ch);
 
