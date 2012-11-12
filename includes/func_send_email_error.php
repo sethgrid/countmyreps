@@ -10,7 +10,7 @@ require_once ("Logger.php");
  * This function makes use of the SendGrid PHP library and uses their Web API rather than SMTP
  */
 function send_email_error($user_email, $addressed_to, $subject, $time){
-        $Log = new Logger("/var/tmp/logs/parseapi.log");
+        $Log = new Logger("/home3/sethammo/www/countmyreps/logs/parseapi");
 	$Log->prefix("[send email error] ");
 	$Log->write("crafting email to $user_email");
 	
