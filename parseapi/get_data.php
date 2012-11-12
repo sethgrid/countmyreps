@@ -14,16 +14,17 @@ if ($user_id){
     $all_records_user       = $DataStore->get_all_records_by_user($user_id);
     $all_records_california = $DataStore->get_all_records_by_office('california');
     $all_records_colorado   = $DataStore->get_all_records_by_office('colorado');
-    $all_records_denver     = $DataStore->get_all_records_by_office['denver'];
+    $all_records_denver     = $DataStore->get_all_records_by_office('denver');
 
     $user_reps_table       = format_as_table($all_records_user);
     $california_reps_table = format_as_table($all_records_california);
     $colorado_reps_table   = format_as_table($all_records_colorado);
+    $denver_reps_table     = format_as_table($all_records_denver);
 
     // get total reps for the offices and the user
     $stats_california  = $DataStore->get_records_by_office("california");
     $stats_colorado    = $DataStore->get_records_by_office("colorado");
-    $stats_denver      = $DataStore->get_records_by_office["denver"];
+    $stats_denver      = $DataStore->get_records_by_office("denver");
 
     $your_totals       = get_totals($all_records_user);
     $california_totals = get_totals($stats_california);
@@ -57,7 +58,7 @@ if ($user_id){
     $info_dn = "<p>Denver Totals -- " . $denver_totals['situps'] . 
                ", " . $denver_totals['pushups'] . 
                ", " . $denver_totals['pullups'] .
-               "<br />Totals: $col_grand_total</p>";
+               "<br />Totals: $den_grand_total</p>";
 }
 else{
     $content = "No User Found";
