@@ -14,23 +14,29 @@ if ($user_id){
     $all_records_user       = $DataStore->get_all_records_by_user($user_id);
     $all_records_california = $DataStore->get_all_records_by_office('california');
     $all_records_colorado   = $DataStore->get_all_records_by_office('colorado');
+    $all_records_denver     = $DataStore->get_all_records_by_office('denver');
 
     $user_reps_table       = format_as_table($all_records_user);
     $california_reps_table = format_as_table($all_records_california);
     $colorado_reps_table   = format_as_table($all_records_colorado);
+    $denver_reps_table     = format_as_table($all_records_denver);
 
     // get total reps for the offices and the user
     $stats_california  = $DataStore->get_records_by_office("california");
     $stats_colorado    = $DataStore->get_records_by_office("colorado");
+    $stats_denver      = $DataStore->get_records_by_office("denver");
 
     $your_totals       = get_totals($all_records_user);
     $california_totals = get_totals($stats_california);
     $colorado_totals   = get_totals($stats_colorado);
+    $denver_totals     = get_totals($stats_denver);
 
     $your_grand_total = array_sum($your_totals);
     $cal_grand_total  = array_sum($california_totals);
     $col_grand_total  = array_sum($colorado_totals);
-    $grand_total      = $your_grand_total + $cal_grand_total + $col_grand_total;
+    $den_grand_totals = array_sum($denver_totals);
+
+    $grand_total      = $your_grand_total + $cal_grand_total + $col_grand_total + $den_grand_totals;
 
     $header .= 'Company total: ' . $grand_total;
 
@@ -44,10 +50,15 @@ if ($user_id){
              ", " . $california_totals['pullups'] . 
              "<br />Total: $cal_grand_total</p>";
     
-    $info_co = "<p>Colorado Totals -- " . $colorado_totals['situps'] . 
+    $info_co = "<p>Boulder Totals -- " . $colorado_totals['situps'] . 
              ", " . $colorado_totals['pushups'] . 
              ", " . $colorado_totals['pullups'] . 
              "<br />Total: $col_grand_total</p>";
+
+    $info_dn = "<p>Denver Totals -- " . $denver_totals['situps'] . 
+               ", " . $denver_totals['pushups'] . 
+               ", " . $denver_totals['pullups'] .
+               "<br />Totals: $den_grand_total</p>";
 }
 else{
     $content = "No User Found";
@@ -70,7 +81,7 @@ else{
         div.center{
             margin: auto;
             background-color: white;
-            width: 1200px; 
+            width: 1250px; 
             border: 1px solid #C8C8C8; 
             padding-top: 10px;
             padding-bottom: 20px;
@@ -114,6 +125,7 @@ else{
 		<td class="cell"><?php echo $info_u.$user_reps_table;?></td>
 		<td class="cell"><?php echo $info_ca.$california_reps_table;?></td>
 		<td class="cell"><?php echo $info_co.$colorado_reps_table;?></td>
+		<td class="cell"><?php echo $info_dn.$denver_reps_table;?></td>
 	</tr>
 	</table>
     </div>
