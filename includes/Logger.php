@@ -23,7 +23,7 @@ class Logger{
 		// issue setting this as default in constructor
 		$this->filename = '/home3/sethammo/www/countmyreps/logs/parseapi.log'; //getenv('HTTP_LOG_FILE');
 	}
-        $this->fh = fopen($filename, "a");
+        $this->fh = fopen($this->filename, "a");
     }
 
     /**
