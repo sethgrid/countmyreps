@@ -15,7 +15,7 @@ class Logger{
      * @param string $filename The file to which we will append.
      * @return void
      */
-    function __construct($filename = "logger.log"){
+    function __construct($filename = getenv("HTTP_LOG_FILE"){
         $this->filename = $filename;
         $this->fh       = fopen($filename, "a");
     }
