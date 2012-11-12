@@ -15,7 +15,7 @@ class Logger{
      * @param string $filename The file to which we will append.
      * @return void
      */
-    function __construct($filename){
+    function __construct($filename = ''){
         if ($filename){
 		$this->filename = $filename;
         }
@@ -23,7 +23,7 @@ class Logger{
 		// issue setting this as default in constructor
 		$this->filename = '/home3/sethammo/www/countmyreps/logs/parseapi.log'; //getenv('HTTP_LOG_FILE');
 	}
-        $this->fh       = fopen($filename, "a");
+        $this->fh = fopen($filename, "a");
     }
 
     /**
