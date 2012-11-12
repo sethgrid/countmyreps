@@ -34,9 +34,9 @@ if ($user_id){
     $your_grand_total = array_sum($your_totals);
     $cal_grand_total  = array_sum($california_totals);
     $col_grand_total  = array_sum($colorado_totals);
-    $den_grand_totals = array_sum($denver_totals);
+    $den_grand_total  = array_sum($denver_totals);
 
-    $grand_total      = $your_grand_total + $cal_grand_total + $col_grand_total + $den_grand_totals;
+    $grand_total      = $your_grand_total + $cal_grand_total + $col_grand_total + $den_grand_total;
 
     $header .= 'Company total: ' . $grand_total;
 
