@@ -76,7 +76,7 @@ class DataStore
         $query->bindParam(":user_id", $user_id);
         $query->bindParam(":exercise", $exercise);
         $query->bindParam(":count", $reps);
-	$query->bindParam(":date", date("Y-m-d H:i:s"));
+	    $query->bindParam(":date", date("Y-m-d H:i:s"));
 
         foreach ($rep_hash as $exercise=>$reps){
             $result = $query->execute();
@@ -87,6 +87,19 @@ class DataStore
         }
 
         return false;
+    }
+
+    /**
+     * get_count_by_office
+     * @param  string $office The office the user is in
+     * @return int            The count of users in that office
+     */
+    function get_count_by_office($office){
+        $query = $this->db->prepare("SELECT COUNT(*) FROM `user` WHERE `office`=:office");
+        $query->bindParam(":office", $office);
+        $result = $query->execute();
+
+        return $result;
     }
 
     /**

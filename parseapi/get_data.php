@@ -9,56 +9,48 @@ $content = '';
 $user = $_GET['email'];
 $user_id = $DataStore->user_exists($user);
 if ($user_id){
+
+    // to get the reps/person in each office, we need the total count of people in each office
+    // there are two totals -- total people participating and total raw people
+    $person_count_california_real = 34;
+    $person_count_boulder_real    = 48;
+    $person_count_denver_real     = 26;
+
+    $person_count_california_participating = get_count_by_office('california');
+    $person_count_boulder_participating    = get_count_by_office('boulder');
+    $prson_count_denver_participating      = get_count_by_office('denver');
+
     $header  = "<h3>Reps for $user</h3>";
 
     $all_records_user       = $DataStore->get_all_records_by_user($user_id);
     $all_records_california = $DataStore->get_all_records_by_office('california');
-    $all_records_colorado   = $DataStore->get_all_records_by_office('colorado');
+    $all_records_boulder    = $DataStore->get_all_records_by_office('boulder');
     $all_records_denver     = $DataStore->get_all_records_by_office('denver');
 
     $user_reps_table       = format_as_table($all_records_user);
     $california_reps_table = format_as_table($all_records_california);
-    $colorado_reps_table   = format_as_table($all_records_colorado);
+    $boulder_reps_table    = format_as_table($all_records_boulder);
     $denver_reps_table     = format_as_table($all_records_denver);
 
     // get total reps for the offices and the user
     $stats_california  = $DataStore->get_records_by_office("california");
-    $stats_colorado    = $DataStore->get_records_by_office("colorado");
+    $stats_boulder     = $DataStore->get_records_by_office("boulder");
     $stats_denver      = $DataStore->get_records_by_office("denver");
 
     $your_totals       = get_totals($all_records_user);
     $california_totals = get_totals($stats_california);
-    $colorado_totals   = get_totals($stats_colorado);
+    $boulder_totals    = get_totals($stats_boulder);
     $denver_totals     = get_totals($stats_denver);
-
-    $your_grand_total = array_sum($your_totals);
-    $cal_grand_total  = array_sum($california_totals);
-    $col_grand_total  = array_sum($colorado_totals);
-    $den_grand_total  = array_sum($denver_totals);
 
     $grand_total      = $your_grand_total + $cal_grand_total + $col_grand_total + $den_grand_total;
 
     $header .= 'Company total: ' . $grand_total;
 
-    $info_u = "<p>Your Totals --  " . $your_totals['situps'] . 
-             ", " . $your_totals['pushups'] . 
-             ", " . $your_totals['pullups'] . 
-             "<br />Total: $your_grand_total</p>";
- 
-    $info_ca = "<p>California Totals --  " . $california_totals['situps'] . 
-             ", " . $california_totals['pushups'] . 
-             ", " . $california_totals['pullups'] . 
-             "<br />Total: $cal_grand_total</p>";
-    
-    $info_co = "<p>Boulder Totals -- " . $colorado_totals['situps'] . 
-             ", " . $colorado_totals['pushups'] . 
-             ", " . $colorado_totals['pullups'] . 
-             "<br />Total: $col_grand_total</p>";
+    $info_u  = show_stats("Your",       $your_totals, 1, 1);
+    $info_ca = show_stats("California", $california_totals, $person_count_california_real, $person_count_california_participating);
+    $info_co = show_stats("Boulder",    $boulder_totals,    $person_count_boulder_real,    $person_count_boulder_participating);
+    $info_dn = show_stats("Denver",     $devner_totals,     $person_count_denver_real,     $person_count_denver_participating);
 
-    $info_dn = "<p>Denver Totals -- " . $denver_totals['situps'] . 
-               ", " . $denver_totals['pushups'] . 
-               ", " . $denver_totals['pullups'] .
-               "<br />Totals: $den_grand_total</p>";
 }
 else{
     $content = "No User Found";
@@ -124,7 +116,7 @@ else{
 	<tr>
 		<td class="cell"><?php echo $info_u.$user_reps_table;?></td>
 		<td class="cell"><?php echo $info_ca.$california_reps_table;?></td>
-		<td class="cell"><?php echo $info_co.$colorado_reps_table;?></td>
+		<td class="cell"><?php echo $info_co.$boulder_reps_table;?></td>
 		<td class="cell"><?php echo $info_dn.$denver_reps_table;?></td>
 	</tr>
 	</table>
