@@ -2,6 +2,7 @@
 include("../includes/DataStore.php");
 include("../includes/func_get_totals.php");
 include("../includes/func_format_as_table.php");
+include("../includes/func_show_stats.php");
 
 $DataStore = new DataStore;
 $content = '';
@@ -16,15 +17,15 @@ if ($user_id){
     $person_count_boulder_real    = 48;
     $person_count_denver_real     = 26;
 
-    $person_count_california_participating = get_count_by_office('california');
-    $person_count_boulder_participating    = get_count_by_office('boulder');
-    $prson_count_denver_participating      = get_count_by_office('denver');
+    $person_count_california_participating = $DataStore->get_count_by_office('california');
+    $person_count_boulder_participating    = $DataStore->get_count_by_office('colorado');
+    $prson_count_denver_participating      = $DataStore->get_count_by_office('denver');
 
     $header  = "<h3>Reps for $user</h3>";
 
     $all_records_user       = $DataStore->get_all_records_by_user($user_id);
     $all_records_california = $DataStore->get_all_records_by_office('california');
-    $all_records_boulder    = $DataStore->get_all_records_by_office('boulder');
+    $all_records_boulder    = $DataStore->get_all_records_by_office('colorado');
     $all_records_denver     = $DataStore->get_all_records_by_office('denver');
 
     $user_reps_table       = format_as_table($all_records_user);
@@ -34,7 +35,7 @@ if ($user_id){
 
     // get total reps for the offices and the user
     $stats_california  = $DataStore->get_records_by_office("california");
-    $stats_boulder     = $DataStore->get_records_by_office("boulder");
+    $stats_boulder     = $DataStore->get_records_by_office("colorado");
     $stats_denver      = $DataStore->get_records_by_office("denver");
 
     $your_totals       = get_totals($all_records_user);
@@ -42,14 +43,14 @@ if ($user_id){
     $boulder_totals    = get_totals($stats_boulder);
     $denver_totals     = get_totals($stats_denver);
 
-    $grand_total      = $your_grand_total + $cal_grand_total + $col_grand_total + $den_grand_total;
+    $grand_total      = array_sum($your_totals) + array_sum($california_totals) + array_sum($boulder_totals) + array_sum($denver_totals);
 
     $header .= 'Company total: ' . $grand_total;
 
     $info_u  = show_stats("Your",       $your_totals, 1, 1);
     $info_ca = show_stats("California", $california_totals, $person_count_california_real, $person_count_california_participating);
     $info_co = show_stats("Boulder",    $boulder_totals,    $person_count_boulder_real,    $person_count_boulder_participating);
-    $info_dn = show_stats("Denver",     $devner_totals,     $person_count_denver_real,     $person_count_denver_participating);
+    $info_dn = show_stats("Denver",     $denver_totals,     $person_count_denver_real,     $person_count_denver_participating);
 
 }
 else{
