@@ -11,7 +11,7 @@
 function show_stats($who, $totals, $real_head_count, $participating_head_count){
     $grand_total = array_sum($totals);
     $reps_per_person_in_office     = (int)($grand_total / $real_head_count); 
-    $pres_per_person_participating = (int)($grand_total / $participating_head_count);
+    $reps_per_person_participating = (int)($grand_total / $participating_head_count);
 
     // special case: if $who is "Your", the the per person values are non-applicable
     if ($who == "Your"){
@@ -23,8 +23,8 @@ function show_stats($who, $totals, $real_head_count, $participating_head_count){
              ", " . $totals['pushups'] . 
              ", " . $totals['pullups'] . "<br />" . 
              "Total: $grand_total <br />" . 
-             "Reps per person in office: " . (int) ($grand_total / $real_head_count) . "<br />" .
-             "Reps per person participating: " . (int) ($grand_total / $participating_head_count) . "<br />";
+             "Reps per person in office: " . $reps_per_person_in_office . "<br />" .
+             "Reps per person participating: " . $reps_per_person_participating . "<br />";
     
     return $info;
 }

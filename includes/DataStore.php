@@ -97,9 +97,10 @@ class DataStore
     function get_count_by_office($office){
         $query = $this->db->prepare("SELECT COUNT(*) FROM `user` WHERE `office`=:office");
         $query->bindParam(":office", $office);
-        $result = $query->execute();
-
-        return $result;
+	$query->execute();
+        $result = $query->fetchAll();
+        // the result is a multidimensional array, the first element on the first result is our count
+	return $result[0][0];
     }
 
     /**

@@ -19,7 +19,7 @@ if ($user_id){
 
     $person_count_california_participating = $DataStore->get_count_by_office('california');
     $person_count_boulder_participating    = $DataStore->get_count_by_office('colorado');
-    $prson_count_denver_participating      = $DataStore->get_count_by_office('denver');
+    $person_count_denver_participating     = $DataStore->get_count_by_office('denver');
 
     $header  = "<h3>Reps for $user</h3>";
 
