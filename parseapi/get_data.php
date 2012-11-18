@@ -55,6 +55,12 @@ if ($user_id){
     $info_co = show_stats("Boulder",    $boulder_totals,    $person_count_boulder_real,    $person_count_boulder_participating);
     $info_dn = show_stats("Denver",     $denver_totals,     $person_count_denver_real,     $person_count_denver_participating);
 
+    if ($user == "none"){
+	$info_u = '';
+	$user_reps_table = '';
+	$header = "<h3>Reps for SendGrid</h3>";
+    }
+
 }
 else{
     $content = "No User Found";
