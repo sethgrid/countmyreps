@@ -1,3 +1,4 @@
 <?php
+$path = '../parseapi/get_data.php?email=none';
 
-include ('../parseapi/get_data.php?email=none");
+header("Location: $path");
