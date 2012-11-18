@@ -132,7 +132,7 @@ class DataStore
                 $return[$date][$record['exercise']] += $record['count'];
            }
         }
-        
+
 	return $return;
     }
 

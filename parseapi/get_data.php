@@ -43,7 +43,10 @@ if ($user_id){
     $boulder_totals    = get_totals($stats_boulder);
     $denver_totals     = get_totals($stats_denver);
 
-    $grand_total      = array_sum($your_totals) + array_sum($california_totals) + array_sum($boulder_totals) + array_sum($denver_totals);
+    $grand_total      = 0;
+    $grand_total      = array_sum($california_totals); 
+    $grand_total     += array_sum($boulder_totals); 
+    $grand_total     += array_sum($denver_totals);
 
     $header .= 'Company total: ' . $grand_total;
 
@@ -56,12 +59,6 @@ if ($user_id){
 else{
     $content = "No User Found";
 }
-
-
-// look up user
-// if found, display reps
-
-// else show error
 
 ?>
 <html>

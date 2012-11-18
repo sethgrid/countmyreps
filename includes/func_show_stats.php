@@ -9,7 +9,7 @@
  * @return string                          Some HTML describing the stats totals
  */
 function show_stats($who, $totals, $real_head_count, $participating_head_count){
-    $grand_total = array_sum($totals);
+    $grand_total = (is_array($totals)) ?  array_sum($totals) : 0;
     $reps_per_person_in_office     = (int)($grand_total / $real_head_count); 
     $reps_per_person_participating = (int)($grand_total / $participating_head_count);
 
