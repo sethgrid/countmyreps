@@ -8,6 +8,7 @@
  */
 function get_totals($data_array){
     foreach ($data_array as $k => $v){
+	$return = array('situps'=>0, 'pushups'=>0, 'pullups'=>0);
         if (is_array($v)){
             foreach ($v as $k2 => $v2){
 		// now that we have dug into the array, we set our values based on two different

@@ -119,18 +119,20 @@ class DataStore
         // Array [date][types of exercise] => reps for that day
         foreach ($records as $record){
             // get the date from the string (ie, text prior to the space)
-            $date = $record['created_at'];
-            $date = explode(" ", $date);
-            $date = $date[0];
-	    $today = date('Y-m-d');
+            $date     = $record['created_at'];
+            $date     = explode(" ", $date);
+            $date     = $date[0];
+	    $today    = date('Y-m-d');
+            $date_key = $date;
 
             // we want to show all of today's exercises by full time, everything else by day
-	    if ($date == $today){
-                $return[$record['created_at']][$record['exercise']] += $record['count'];
-            }
-            else{
-                $return[$date][$record['exercise']] += $record['count'];
-           }
+	    if ($date == $today) $date_key = $record['created_at'];
+                
+            // initialize the key to avoid warnings
+            if (!array_key_exists($date_key, $return)) $return[$date_key] = array('situps'=>0, 'pushups'=>0, 'pullups'=>0);
+           
+            // increment
+            $return[$date_key][$record['exercise']] += $record['count'];
         }
 
 	return $return;
@@ -155,6 +157,8 @@ class DataStore
             $date = $record['created_at'];
             $date = explode(" ", $date);
             $date = $date[0];
+
+            if (!array_key_exists($date, $return)) $return[$date] = array('situps'=>0, 'pushups'=>0, 'pullups'=>0);
             $return[$date][$record['exercise']] += $record['count'];
         }
 
@@ -173,7 +177,12 @@ class DataStore
         $records = $query->fetchAll();
         $return = Array();
         foreach ($records as $record){
-            $return[$record['created_at']][$record['exercise']] += $record['count'];
+	    $i = $record['created_at'];
+            $j = $record['exercise'];
+
+            if (!array_key_exists($i, $return)) $return[$i] = Array('situps'=>0, 'pushups'=>0, 'pullups'=>0);
+
+            $return[$i][$j] += $record['count'];
         }
 
         return $return;
