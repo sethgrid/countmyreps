@@ -24,7 +24,7 @@ class ReceiveParseAPI
     function __construct($raw_post){
         $this->raw_post   = $raw_post;
         $this->to         = $raw_post['to'];
-        $this->from       = $this->get_email($raw_post['from']);
+        $this->from       = $this->extract_email($raw_post['from']);
         $this->subject    = $raw_post['subject'];
         $this->text       = $raw_post['text'];
         $this->html       = $raw_post['html'];
@@ -52,7 +52,7 @@ class ReceiveParseAPI
         // make sure that we are getting values for all the reps
         foreach ($this->reps_hash as $exercise => $reps){
             if (!is_string($exercise) || !is_numeric($reps)){
-		$this->error = "Non numeric rep encountered";
+		        $this->error = "Non numeric rep encountered";
                 $this->send_error();
                 return false;
             }
@@ -62,19 +62,17 @@ class ReceiveParseAPI
     }
 
     /**
-     * lprint
-     * @param string $msg a message to be printed to logs
-     * @return void
-     * Used for debugging the class if needed
+     * get
+     * @param string $propert The name of the property
+     * properties: to, from, subject, text, html, reps_array, reps_hash, raw_post
+     * accesor method to get a given property if it exists
      */
-    function lprint($msg){
-	require_once('Logger.php');
-	$Logger = new Logger("/var/tmp/logs/debug.log");
-	$Logger->write($msg);
+    function get($property){
+        return $this->$property;
     }
 
     /**
-     * get_email
+     * extract_email
      * @param  string $from_string the From Header
      * @return string              the email address
      * Expected input:
@@ -82,7 +80,7 @@ class ReceiveParseAPI
      *  - <email@adder.ess>
      *  - email@adder.ess
      */ 
-    function get_email($from_string){
+    function extract_email($from_string){
         // store matches in $matches. Being greedy, first result [0][0] will be "<email@addr.ess>". result [1][0] will be "email@addr.ess"
         preg_match_all('/<(.*)>/', $from_string, $matches);
 
@@ -99,10 +97,15 @@ class ReceiveParseAPI
      * get_reps_array
      * @param  string $reps comma delimited string list of reps
      * @return array        array of values
-     * TODO: change whole process to OO. Then make sure that element count matches to-string count
+     * TODO: Change process to check that element count matches to-string count (so users can send in different exercises)
      */
     function get_reps_array($reps){
-        return explode(",", $reps);
+        $return_array = explode(",", $reps);
+        if (sizeof($return_array) == 3){
+            return $return_array;
+        }
+        // if we did not get three elements, something is wrong. populate a three item array, and kick the ball down the court.
+        return array(null, null, null);
     }
 
     /**
@@ -110,9 +113,9 @@ class ReceiveParseAPI
      * @return void
      */
     function send_error(){
-	// from is the person who sent the email we recieved (ie, the sender who sent to us; the person to which we need to kick the error)
- 	// to is the address they sent to (on our end)
-	send_email_error($this->from, $this->to, $this->subject, date("Y-m-d H:i:s"));
-	send_email_error(getenv('HTTP_MY_EMAIL'), $this->to, $this->subject . " (from $this->from)", date("Y-m-d H:i:s"));
+    	// from is the person who sent the email we recieved (ie, the sender who sent to us; the person to which we need to kick the error)
+ 	    // to is the address they sent to (on our end)
+	    send_email_error($this->from, $this->to, $this->subject, date("Y-m-d H:i:s"));
+	    send_email_error(getenv('HTTP_MY_EMAIL'), $this->to, $this->subject . " (from $this->from)", date("Y-m-d H:i:s"));
     }
 }
