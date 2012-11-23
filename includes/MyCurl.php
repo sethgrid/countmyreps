@@ -30,7 +30,7 @@ class MyCurl{
      * @return string Returns the content of the URL set in constructor
      */
     function exec(){
-        return $curl_exec($this->ch);
+        return curl_exec($this->ch);
     }
 
     /**
