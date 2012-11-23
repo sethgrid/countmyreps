@@ -15,13 +15,15 @@ class DataStore
      * @return void
      * Sets up the db connection, making use of environment variables that are set in .htaccess
      */
-    function __construct(){
+    function __construct($pdo_connection = null){
         $this->db_user = getenv("HTTP_DB_USER");
         $this->db_pass = getenv("HTTP_DB_PASS");
         $this->db_name = getenv("HTTP_DB_NAME");
         $this->db_host = 'localhost';
 
-        $this->db = new PDO("mysql:host=$this->db_host;dbname=$this->db_name", $this->db_user, $this->db_pass);
+        // handle dependency injection
+        if ($pdo_connection) $this->db = $pdo_connection;
+        else $this->db = new PDO("mysql:host=$this->db_host;dbname=$this->db_name", $this->db_user, $this->db_pass);
     }
 
     /**
@@ -97,10 +99,10 @@ class DataStore
     function get_count_by_office($office){
         $query = $this->db->prepare("SELECT COUNT(*) FROM `user` WHERE `office`=:office");
         $query->bindParam(":office", $office);
-	$query->execute();
+	    $query->execute();
         $result = $query->fetchAll();
         // the result is a multidimensional array, the first element on the first result is our count
-	return $result[0][0];
+	    return $result[0][0];
     }
 
     /**
@@ -122,11 +124,11 @@ class DataStore
             $date     = $record['created_at'];
             $date     = explode(" ", $date);
             $date     = $date[0];
-	    $today    = date('Y-m-d');
+	        $today    = date('Y-m-d');
             $date_key = $date;
 
             // we want to show all of today's exercises by full time, everything else by day
-	    if ($date == $today) $date_key = $record['created_at'];
+	        if ($date == $today) $date_key = $record['created_at'];
                 
             // initialize the key to avoid warnings
             if (!array_key_exists($date_key, $return)) $return[$date_key] = array('situps'=>0, 'pushups'=>0, 'pullups'=>0);
@@ -144,7 +146,7 @@ class DataStore
      * @return array          array indexed by date, second index by exercise, value is reps
      */
     function get_all_records_by_office($office){
-        $query = $this->db->prepare("SELECT * FROM `reps`as r LEFT JOIN `user` as u on r.user_id=u.id WHERE u.office=:office ORDER BY r.created_at");
+        $query = $this->db->prepare("SELECT * FROM `reps` as r LEFT JOIN `user` as u on r.user_id=u.id WHERE u.office=:office ORDER BY r.created_at");
         $query->bindParam(":office", $office);
         $query->execute();
         $records = $query->fetchAll();
@@ -164,27 +166,4 @@ class DataStore
 
         return $return;
     }
-    
-    /**
-     * get_records_by_office
-     * @param  string $office The office of which the user is based (for office competitions)
-     * @return array          Array indexed by date, second index by exercise, value is reps
-     */
-    function get_records_by_office($office){
-        $query = $this->db->prepare("SELECT * FROM `reps` as r LEFT JOIN `user` as u on u.id=r.user_id WHERE `office`=:office ORDER BY `created_at`");
-        $query->bindParam(":office", $office);
-        $query->execute();
-        $records = $query->fetchAll();
-        $return = Array();
-        foreach ($records as $record){
-	    $i = $record['created_at'];
-            $j = $record['exercise'];
-
-            if (!array_key_exists($i, $return)) $return[$i] = Array('situps'=>0, 'pushups'=>0, 'pullups'=>0);
-
-            $return[$i][$j] += $record['count'];
-        }
-
-        return $return;
-    }
-}
+} 

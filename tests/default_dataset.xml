@@ -1,0 +1,91 @@
+<dataset>
+    <user
+        id="1"
+        email="user1@example.com"
+        office="california"
+    />
+    <user
+        id="2"
+        email="user2@example.com"
+        office="california"
+    />
+    <user
+        id="3"
+        email="user3@example.com"
+        office="colorado"
+    />
+    <user
+        id="4"
+        email="user4@example.com"
+        office="denver"
+    />
+    <user
+        id="5"
+        email="none"
+        office=""
+    />
+
+    <reps
+        id="1"
+        user_id="1"
+        exercise="situps"
+        count="25"
+        created_at="2012-11-03 20:14:57"
+    />
+    <reps
+        id="2"
+        user_id="1"
+        exercise="pushups"
+        count="25"
+        created_at="2012-11-03 20:14:57"
+    />
+    <reps
+        id="3"
+        user_id="1"
+        exercise="pullups"
+        count="25"
+        created_at="2012-11-03 20:14:57"
+    />
+    <reps
+        id="4"
+        user_id="1"
+        exercise="situps"
+        count="35"
+        created_at="2012-11-04 20:14:57"
+    />
+    <reps
+        id="5"
+        user_id="1"
+        exercise="pushups"
+        count="35"
+        created_at="2012-11-04 20:14:57"
+    />
+    <reps
+        id="6"
+        user_id="1"
+        exercise="pullups"
+        count="35"
+        created_at="2012-11-04 20:14:57"
+    />
+    <reps
+        id="7"
+        user_id="2"
+        exercise="situps"
+        count="35"
+        created_at="2012-11-04 20:14:57"
+    />
+    <reps
+        id="8"
+        user_id="2"
+        exercise="pushups"
+        count="35"
+        created_at="2012-11-04 20:14:57"
+    />
+    <reps
+        id="9"
+        user_id="2"
+        exercise="pullups"
+        count="35"
+        created_at="2012-11-04 20:14:57"
+    />
+</dataset>
