@@ -17,12 +17,12 @@ class Logger{
      */
     function __construct($filename = ''){
         if ($filename){
-		$this->filename = $filename;
+		    $this->filename = $filename;
         }
-	else{
-		// issue setting this as default in constructor
-		$this->filename = '/home3/sethammo/www/countmyreps/logs/parseapi.log'; //getenv('HTTP_LOG_FILE');
-	}
+	    else{
+		    // issue setting this as default in constructor
+		    $this->filename = '/home3/sethammo/www/countmyreps/logs/parseapi.log'; //getenv('HTTP_LOG_FILE');
+	    }
         $this->fh = fopen($this->filename, "a");
     }
 
