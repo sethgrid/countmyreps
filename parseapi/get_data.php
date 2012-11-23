@@ -34,14 +34,10 @@ if ($user_id){
     $denver_reps_table     = format_as_table($all_records_denver);
 
     // get total reps for the offices and the user
-    $stats_california  = $DataStore->get_records_by_office("california");
-    $stats_boulder     = $DataStore->get_records_by_office("colorado");
-    $stats_denver      = $DataStore->get_records_by_office("denver");
-
     $your_totals       = get_totals($all_records_user);
-    $california_totals = get_totals($stats_california);
-    $boulder_totals    = get_totals($stats_boulder);
-    $denver_totals     = get_totals($stats_denver);
+    $california_totals = get_totals($all_records_california);
+    $boulder_totals    = get_totals($all_records_boulder);
+    $denver_totals     = get_totals($all_records_denver);
 
     $grand_total      = 0;
     $grand_total      = array_sum($california_totals); 
