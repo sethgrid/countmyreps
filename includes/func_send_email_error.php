@@ -19,9 +19,6 @@ function send_email_error($user_email, $addressed_to, $subject, $time, $Log=null
     if (!$Log){
         $Log = new Logger();
     }
-    if (!$MyCurlRequest){
-        $MyCurlRequest = new MyCurl();
-    }
 
 	$Log->prefix("[send email] ");
 	
@@ -53,6 +50,11 @@ function send_email_error($user_email, $addressed_to, $subject, $time, $Log=null
             "&subject=" . trim($subject) . 
             "&text=" . trim($text_message) .
             "&from=error@countmyreps.com";
+    
+    // dependency injection
+    if (!$MyCurlRequest){
+        $MyCurlRequest = new MyCurl($url);
+    }
 
     // execute the curl request
     $result = $MyCurlRequest->exec();
