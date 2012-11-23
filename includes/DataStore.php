@@ -78,7 +78,8 @@ class DataStore
         $query->bindParam(":user_id", $user_id);
         $query->bindParam(":exercise", $exercise);
         $query->bindParam(":count", $reps);
-	    $query->bindParam(":date", date("Y-m-d H:i:s"));
+        $now = date("Y-m-d H:i:s"); // not using SQL NOW() to avoid three inserts taking place upto a second appart
+	    $query->bindParam(":date", $now);
 
         foreach ($rep_hash as $exercise=>$reps){
             $result = $query->execute();
