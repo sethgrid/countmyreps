@@ -27,13 +27,13 @@ class ReceiveParseAPI
         $this->from       = $this->extract_email($raw_post['from']);
         $this->subject    = $raw_post['subject'];
         $this->text       = $raw_post['text'];
-        $this->html       = $raw_post['html'];
         $this->reps_array = $this->get_reps_array($raw_post['subject']);
         $this->reps_hash  = Array(
                               'situps'  => $this->reps_array[0], 
                               'pushups' => $this->reps_array[1], 
                               'pullups' => $this->reps_array[2]
                             );
+        if (array_key_exists('html', $raw_post)) $this->html = $raw_post['html'];
     }
 
     /**
