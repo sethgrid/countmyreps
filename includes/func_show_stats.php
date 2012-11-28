@@ -12,19 +12,25 @@ function show_stats($who, $totals, $real_head_count, $participating_head_count){
     $grand_total = (is_array($totals)) ?  array_sum($totals) : 0;
     $reps_per_person_in_office     = (int)($grand_total / $real_head_count); 
     $reps_per_person_participating = (int)($grand_total / $participating_head_count);
+    $reps_per_person_per_day       = (int)($reps_per_person_in_office / (int) date('d'));
+    $percent_participating         = (int)(($participating_head_count / $real_head_count) * 100);
 
     // special case: if $who is "Your", the the per person values are non-applicable
     if ($who == "Your"){
         $reps_per_person_in_office     = 'N/A';
         $reps_per_person_participating = 'N/A';
+        $reps_per_person_per_day       = 'N/A';
+        $percent_participating         = 'N/A';
     }
 
     $info  = "<p>$who Totals --  " . $totals['situps'] . 
              ", " . $totals['pushups'] . 
              ", " . $totals['pullups'] . "<br />" . 
-             "Total: $grand_total <br />" . 
+             "Total: $grand_total <br /><br />" . 
              "Reps per person in office: " . $reps_per_person_in_office . "<br />" .
-             "Reps per person participating: " . $reps_per_person_participating . "<br />";
+             "Reps per person per day in office: " . $reps_per_person_per_day . "<br /><br />" .
+             "Reps per person participating: " . $reps_per_person_participating . "<br />" . 
+             "Percent participating: " . $percent_participating . "%<br />";
     
     return $info;
 }
