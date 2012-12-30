@@ -110,10 +110,6 @@ class ReceiveParseAPI
         return array(null);
         #return array(null, null, null);
     }
-function periodExpired(){
-	$this->subject = 'Movember is over. Try again next year.';
-	$this->send_error();
-}
     /**
      * send_error
      * @return void

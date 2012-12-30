@@ -6,6 +6,7 @@ include("../includes/func_show_stats.php");
 
 $DataStore = new DataStore;
 $content = '';
+$hearder = 'Burpee Reps';
 
 $user = $_GET['email'];
 $user_id = $DataStore->user_exists($user);

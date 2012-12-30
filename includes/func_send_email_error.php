@@ -33,7 +33,6 @@ function send_email_error($user_email, $addressed_to, $subject, $time, $Log=null
     $msg .= "Time: $time\n";
 
     $text_message = $msg;
-$text_message = 'Movember is over folks. Try again next year.';
     // setup and send the email to the user
     $sg_username = urlencode(getenv('HTTP_SG_USERNAME'));
     $sg_password = urlencode(getenv('HTTP_SG_PASSWORD'));
