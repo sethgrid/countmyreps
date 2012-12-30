@@ -31,7 +31,8 @@ if ($day_number > 100) $day_number = 100;
 
 <div class="center">
     <div class="inner">
-     <b>Day <?php echo $day_number;?> of the 100 Day Burbee Challenge!</b> January 1st - April 10th<br />
+     <b>Day <?php echo $day_number;?> of the 100 Day Burbee Challenge!</b> <br />
+         January 1st - April 10th<br />
          <br />
          Enter your email address to see how many reps you've put in!
          <form action="parseapi/get_data.php" method="get">
