@@ -12,7 +12,7 @@ function show_stats($who, $totals, $real_head_count, $participating_head_count){
     $grand_total = (is_array($totals)) ?  array_sum($totals) : 0;
     $reps_per_person_in_office     = (int)($grand_total / $real_head_count); 
     $reps_per_person_participating = (int)($grand_total / $participating_head_count);
-    $reps_per_person_per_day       = (int)($reps_per_person_in_office / (int) date('d'));
+    $reps_per_person_per_day       = (int)($reps_per_person_in_office / 30); #(int) date('d'));
     $percent_participating         = (int)(($participating_head_count / $real_head_count) * 100);
 
     // special case: if $who is "Your", the the per person values are non-applicable

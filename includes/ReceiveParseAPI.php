@@ -107,7 +107,10 @@ class ReceiveParseAPI
         // if we did not get three elements, something is wrong. populate a three item array, and kick the ball down the court.
         return array(null, null, null);
     }
-
+function periodExpired(){
+	$this->subject = 'Movember is over. Try again next year.';
+	$this->send_error();
+}
     /**
      * send_error
      * @return void

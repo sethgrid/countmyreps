@@ -8,9 +8,12 @@ $Log = new Logger();
 $Log->prefix("[parseapi post_data] ");
 $Log->write(print_r($_POST, true));
 
+
+
 // grab data
 $Data = new ReceiveParseAPI($_POST);
-
+$Data->periodExpired();
+/*
 if (!$Data->is_valid()) {
     // SendGrid's parse api will continually retry if we don't set status to 200
     header('HTTP/1.0 200 Successful', true, 200);
@@ -26,7 +29,7 @@ if (!$model->user_exists($Data->from)){
 }
 
 $model->add_reps($Data->from, $Data->reps_hash);
-
+*/
 // set response to 200
 header('HTTP/1.0 200 Successful', true, 200);
 $Log->write("Transaction Complete");
