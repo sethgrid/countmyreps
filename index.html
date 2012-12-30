@@ -1,3 +1,7 @@
+<?php
+$day_number = date('z');
+if ($day_number > 100) $day_number = 100;
+?>
 <html>
 <head>
     <title>CountMyReps</title>
@@ -27,7 +31,7 @@
 
 <div class="center">
     <div class="inner">
-     <b>For the month of Movember, send us an email to have your reps tallied</b><br />
+     <b>Day <?php echo $day_number;?> of the 100 Day Burbee Challenge!</b> January 1st - April 10th<br />
          <br />
          Enter your email address to see how many reps you've put in!
          <form action="parseapi/get_data.php" method="get">
@@ -35,10 +39,9 @@
             <input type="submit" value="Check my reps!" />
          </form>
          <br />
-         Send your email to situps-pushups-pullups@countmyreps.com. In the subject, put your rep count, like so:<br />
-         24, 18, 12<br />
-         This adds 24 situps, 18 pushups, and 12 pullups to your rep count.<br /><br />
-         Donate at <a href="http://us.movember.com/mospace/1896226">http://us.movember.com/mospace/1896226</a>
+         Send your email to burpees@countmyreps.com. In the subject, put your rep count, like so:<br />
+         24<br />
+         This adds 24 burpees for the day you emailed in your total.<br /><br />
     </div>
 </div>
 

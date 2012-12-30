@@ -120,7 +120,6 @@ else{
 		<td class="cell"><?php echo $info_dn.$denver_reps_table;?></td>
 	</tr>
 	</table>
-	Donate at <a href="http://us.movember.com/mospace/1896226">http://us.movember.com/mospace/1896226</a>
     </div>
 </div>
 
