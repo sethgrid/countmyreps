@@ -82,6 +82,7 @@ class DataStore
 	    $query->bindParam(":date", $now);
 
         foreach ($rep_hash as $exercise=>$reps){
+	    if ($reps < 0) $reps = 0;
             $result = $query->execute();
         }
 

@@ -1,6 +1,6 @@
 <?php
 $day_number = date('z');
-if ($day_number > 100) $day_number = 100;
+if ($day_number++ > 100) $day_number = 100;
 ?>
 <html>
 <head>
