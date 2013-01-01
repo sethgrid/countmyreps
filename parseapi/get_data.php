@@ -85,7 +85,7 @@ else{
         div.center{
             margin: auto;
             background-color: white;
-            width: 1250px; 
+            width: 1450px; 
             border: 1px solid #C8C8C8; 
             padding-top: 10px;
             padding-bottom: 20px;
