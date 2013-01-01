@@ -19,14 +19,14 @@ if ($user_id){
     $person_count_denver_real     = 26;
 
     $person_count_california_participating = $DataStore->get_count_by_office('california');
-    $person_count_boulder_participating    = $DataStore->get_count_by_office('colorado');
+    $person_count_boulder_participating    = $DataStore->get_count_by_office('boulder');
     $person_count_denver_participating     = $DataStore->get_count_by_office('denver');
 
     $header  = "<h3>Reps for $user</h3>";
 
     $all_records_user       = $DataStore->get_all_records_by_user($user_id);
     $all_records_california = $DataStore->get_all_records_by_office('california');
-    $all_records_boulder    = $DataStore->get_all_records_by_office('colorado');
+    $all_records_boulder    = $DataStore->get_all_records_by_office('boulder');
     $all_records_denver     = $DataStore->get_all_records_by_office('denver');
 
     $user_reps_table       = format_as_table($all_records_user);
