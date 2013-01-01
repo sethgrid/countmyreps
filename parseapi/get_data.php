@@ -49,7 +49,7 @@ if ($user_id){
     $grand_total      = array_sum($california_totals); 
     $grand_total     += array_sum($boulder_totals); 
     $grand_total     += array_sum($denver_totals);
-    $grand_total     += array_sum($hn_totals);
+    $grand_total     += array_sum($nh_totals);
 
     $header .= 'Company total: ' . $grand_total;
 
