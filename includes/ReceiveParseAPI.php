@@ -86,7 +86,7 @@ class ReceiveParseAPI
         preg_match_all('/<(.*)>/', $from_string, $matches);
 
         // does it kinda look like an email address?
-        if (strstr($matches[1][0], "@")){
+        if (isset($matches[1][0]) and strstr($matches[1][0], "@")){
             return $matches[1][0];
         }
         else{

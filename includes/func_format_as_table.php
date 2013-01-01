@@ -9,7 +9,7 @@ function format_as_table($all_records){
 
     // initialize empty array
     $init_array = Array();
-    for ($d = 1; $d <= 30; $d++){ #date('d'); $d++){
+    for ($d = 1; $d <= date('d'); $d++){
         // add leading zero if needed
 	if ($d < 10) $d = "0$d";
 	// make the key values equal to dates
