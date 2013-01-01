@@ -15,27 +15,27 @@ if ($user_id){
     $office_info = array( 
         array(
             'office' => 'california',
-            'display_name' => 'Anaheim';
+            'display_name' => 'Anaheim',
             'person_count' => 34,
         ),
         array(
             'office' => 'boulder',
-            'display_name' => 'Boulder';
+            'display_name' => 'Boulder',
             'person_count' => 48,
         ),
         array(
             'office' => 'denver',
-            'display_name' => 'Denver';
+            'display_name' => 'Denver',
             'person_count' => 26,
         ),
         array(
-            'office' => 'new_hampshire',
-            'display_name' => 'New Hampshire';
+            'office' => 'nh',
+            'display_name' => 'New Hampshire',
             'person_count' => 2,
         ),
         array(
             'office' => 'euro',
-            'display_name' => 'Team Euro';
+            'display_name' => 'Team Euro',
             'person_count' => 10,
         ),
     );
@@ -46,21 +46,21 @@ if ($user_id){
         // creates a dynamic variable name such as $participating_california. Esp important for $display_$ofice_name
         $office_name = $office['office'];
 
-        $participating_$office_name = $DataStore->get_count_by_office($office_name);
-        $all_records_$office_name   = $DataStore->get_all_records_by_office($office_name);
-        $reps_table_$office_name    = format_as_table($all_records_$office_name);
-        $totals_$office_name        = get_totals($all_records_$office_name);
-        $grand_total               += array_sum($totals_$office_name);
+        $participating = $DataStore->get_count_by_office($office_name);
+        $all_records   = $DataStore->get_all_records_by_office($office_name);
+        $reps_table    = format_as_table($all_records);
+        $totals        = get_totals($all_records);
+        $grand_total  += array_sum($totals);
 
-        $stats_$office_name   = show_stats($office['display_name'], $totals_$office_name, $participating_$office_name);
-        $display_$office_name = $stats_$office_name . $reps_table_$office_name;
+        $stats                 = show_stats($office['display_name'], $totals, $office['person_count'], $participating);
+        $display[$office_name] = $stats . $reps_table;
     }
 
     $all_records_user = $DataStore->get_all_records_by_user($user_id);
-    $user_reps_table  = format_as_table($all_records_user);
+    $reps_table_user  = format_as_table($all_records_user);
     $totals_user      = get_totals($all_records_user);
-    $stats_user       = show_stats("Your", $your_totals, 1, 1);
-    $display_user     = $stats_user . $totals_user;
+    $stats_user       = show_stats("Your", $totals_user, 1, 1);
+    $display_user     = $stats_user . $reps_table_user;
 
     $header  = "<h3>Reps for $user</h3>";
     $header .= 'Company total: ' . $grand_total;
@@ -127,10 +127,10 @@ else{
 	<table class="icky">
 	<tr>
 		<td class="cell"><?php echo $display_user;?></td>
-		<td class="cell"><?php echo $display_california;?></td>
-		<td class="cell"><?php echo $display_boulder;?></td>
-		<td class="cell"><?php echo $display_denver;?></td>
-		<td class="cell"><?php echo $display_new_hampshire;?></td>
+		<td class="cell"><?php echo $display['california'];?></td>
+		<td class="cell"><?php echo $display['boulder'];?></td>
+		<td class="cell"><?php echo $display['denver'];?></td>
+		<td class="cell"><?php echo $display['nh'];?></td>
 	</tr>
 	</table>
     </div>
