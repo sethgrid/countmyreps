@@ -131,6 +131,7 @@ else{
 		<td class="cell"><?php echo $display['boulder'];?></td>
 		<td class="cell"><?php echo $display['denver'];?></td>
 		<td class="cell"><?php echo $display['nh'];?></td>
+		<td class="cell"><?php echo $display['euro'];?></td>
 	</tr>
 	</table>
     </div>
