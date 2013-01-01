@@ -12,59 +12,63 @@ $user = $_GET['email'];
 $user_id = $DataStore->user_exists($user);
 if ($user_id){
 
-    // to get the reps/person in each office, we need the total count of people in each office
-    // there are two totals -- total people participating and total raw people
-    $person_count_california_real = 34;
-    $person_count_boulder_real    = 48;
-    $person_count_denver_real     = 26;
-    $person_count_nh_real         =  2;
+    $office_info = array( 
+        array(
+            'office' => 'california',
+            'display_name' => 'Anaheim';
+            'person_count' => 34,
+        ),
+        array(
+            'office' => 'boulder',
+            'display_name' => 'Boulder';
+            'person_count' => 48,
+        ),
+        array(
+            'office' => 'denver',
+            'display_name' => 'Denver';
+            'person_count' => 26,
+        ),
+        array(
+            'office' => 'new_hampshire',
+            'display_name' => 'New Hampshire';
+            'person_count' => 2,
+        ),
+        array(
+            'office' => 'euro',
+            'display_name' => 'Team Euro';
+            'person_count' => 10,
+        ),
+    );
 
-    $person_count_california_participating = $DataStore->get_count_by_office('california');
-    $person_count_boulder_participating    = $DataStore->get_count_by_office('boulder');
-    $person_count_denver_participating     = $DataStore->get_count_by_office('denver');
-    $person_count_nh_participating         = $DataStore->get_count_by_office('nh');
+    $grand_total = 0;
 
-    $header  = "<h3>Reps for $user</h3>";
+    foreach ($office_info as $office){
+        // creates a dynamic variable name such as $participating_california. Esp important for $display_$ofice_name
+        $office_name = $office['office'];
 
-    $all_records_user       = $DataStore->get_all_records_by_user($user_id);
-    $all_records_california = $DataStore->get_all_records_by_office('california');
-    $all_records_boulder    = $DataStore->get_all_records_by_office('boulder');
-    $all_records_denver     = $DataStore->get_all_records_by_office('denver');
-    $all_records_nh         = $DataStore->get_all_records_by_office('nh');
+        $participating_$office_name = $DataStore->get_count_by_office($office_name);
+        $all_records_$office_name   = $DataStore->get_all_records_by_office($office_name);
+        $reps_table_$office_name    = format_as_table($all_records_$office_name);
+        $totals_$office_name        = get_totals($all_records_$office_name);
+        $grand_total               += array_sum($totals_$office_name);
 
-    $user_reps_table       = format_as_table($all_records_user);
-    $california_reps_table = format_as_table($all_records_california);
-    $boulder_reps_table    = format_as_table($all_records_boulder);
-    $denver_reps_table     = format_as_table($all_records_denver);
-    $nh_reps_table         = format_as_table($all_records_nh);
-
-    // get total reps for the offices and the user
-    $your_totals       = get_totals($all_records_user);
-    $california_totals = get_totals($all_records_california);
-    $boulder_totals    = get_totals($all_records_boulder);
-    $denver_totals     = get_totals($all_records_denver);
-    $nh_totals         = get_totals($all_records_nh);
-
-    $grand_total      = 0;
-    $grand_total      = array_sum($california_totals); 
-    $grand_total     += array_sum($boulder_totals); 
-    $grand_total     += array_sum($denver_totals);
-    $grand_total     += array_sum($hn_totals);
-
-    $header .= 'Company total: ' . $grand_total;
-
-    $info_u  = show_stats("Your",          $your_totals, 1, 1);
-    $info_ca = show_stats("California",    $california_totals, $person_count_california_real, $person_count_california_participating);
-    $info_co = show_stats("Boulder",       $boulder_totals,    $person_count_boulder_real,    $person_count_boulder_participating);
-    $info_dn = show_stats("Denver",        $denver_totals,     $person_count_denver_real,     $person_count_denver_participating);
-    $info_nh = show_stats("New Hampshire", $nh_totals,         $person_count_nh_real,         $person_count_nh_participating);
-
-    if ($user == "none"){
-	$info_u = '';
-	$user_reps_table = '';
-	$header = "<h3>Reps for SendGrid</h3>";
+        $stats_$office_name   = show_stats($office['display_name'], $totals_$office_name, $participating_$office_name);
+        $display_$office_name = $stats_$office_name . $reps_table_$office_name;
     }
 
+    $all_records_user = $DataStore->get_all_records_by_user($user_id);
+    $user_reps_table  = format_as_table($all_records_user);
+    $totals_user      = get_totals($all_records_user);
+    $stats_user       = show_stats("Your", $your_totals, 1, 1);
+    $display_user     = $stats_user . $totals_user;
+
+    $header  = "<h3>Reps for $user</h3>";
+    $header .= 'Company total: ' . $grand_total;
+
+    if ($user == "none"){
+        $display_user = '';
+	    $header = "<h3>Reps for SendGrid</h3>";
+    }
 }
 else{
     $content = "No User Found";
@@ -122,11 +126,11 @@ else{
         ?>
 	<table class="icky">
 	<tr>
-		<td class="cell"><?php echo $info_u.$user_reps_table;?></td>
-		<td class="cell"><?php echo $info_ca.$california_reps_table;?></td>
-		<td class="cell"><?php echo $info_co.$boulder_reps_table;?></td>
-		<td class="cell"><?php echo $info_dn.$denver_reps_table;?></td>
-		<td class="cell"><?php echo $info_nh.$nh_reps_table;?></td>
+		<td class="cell"><?php echo $display_user;?></td>
+		<td class="cell"><?php echo $display_california;?></td>
+		<td class="cell"><?php echo $display_boulder;?></td>
+		<td class="cell"><?php echo $display_denver;?></td>
+		<td class="cell"><?php echo $display_new_hampshire;?></td>
 	</tr>
 	</table>
     </div>
