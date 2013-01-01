@@ -7,13 +7,13 @@ class getTotalsTest extends PHPUnit_Framework_TestCase{
      */
     public function testCleanRun(){
         $data = array(
-                  "2012-11-03 13:00:54" => array("situps"=>15, "pushups"=>10, "pullups"=>5),
-                  "2012-11-04"          => array("situps"=>15, "pushups"=>10, "pullups"=>5),
-                  "2012-11-05"          => array("situps"=>15, "pushups"=>10, "pullups"=>5),
+                  "2012-11-03 13:00:54" => array("burpees"=>5),
+                  "2012-11-04"          => array("burpees"=>5),
+                  "2012-11-05"          => array("burpees"=>5),
                 );
 
         $result = get_totals($data);
-        $expected = array('situps'=>45, 'pushups'=>30, 'pullups'=>15);
+        $expected = array('burpees'=>15);
         
         $this->assertEquals($expected, $result, 'array totals match');    
     }

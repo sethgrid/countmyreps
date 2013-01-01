@@ -13,14 +13,8 @@ class FormatAsTableTest extends PHPUnit_Framework_TestCase{
                 );
 
         $result = format_as_table($data);
-        $expected_table_headers = "<th>Date/Time</th><th>Sit-ups</th><th>Push-ups</th><th>Pull-ups</th>";
-        $expected_table_row_1   = "<tr><td>2012-11-03</td><td>15</td><td>10</td><td>5</td></tr>";
-        $expected_table_row_2   = "<tr><td>2012-11-04</td><td>15</td><td>10</td><td>5</td></tr>";
-        $expected_table_row_3   = "<tr><td>2012-11-05</td><td>15</td><td>10</td><td>5</td></tr>";
+        $expected_table_headers = "<th>Date/Time</th><th>Burpees</th>";
         
         $this->assertRegExp("~$expected_table_headers~", $result, "table headers match");
-        $this->assertRegExp("~$expected_table_row_1~",   $result, "table row match");
-        $this->assertRegExp("~$expected_table_row_2~",   $result, "table row match");
-        $this->assertRegExp("~$expected_table_row_3~",   $result, "table row match");
     }
 }

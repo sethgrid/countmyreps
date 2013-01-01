@@ -15,7 +15,7 @@ class ReceiveParseAPITest extends PHPUnit_Framework_TestCase{
         $this->raw_post = array(
                             'to'      => 'situps-pushups-pullups@countmyreps.com',
                             'from'    => '"Joe Sixpack" <joe@example.com>',
-                            'subject' => '15, 10, 5',
+                            'subject' => '15',
                             'text'    => null,
                             'html'    => null,
                          );
@@ -26,7 +26,7 @@ class ReceiveParseAPITest extends PHPUnit_Framework_TestCase{
      */
     public function testCleanRun(){
         $Parse = new ReceiveParseAPI($this->raw_post);
-        $this->assertEquals(array(15, 10, 5),  $Parse->get('reps_array'));
+        $this->assertEquals(array(15),  $Parse->get('reps_array'));
     }
 
     /**
@@ -61,7 +61,7 @@ class ReceiveParseAPITest extends PHPUnit_Framework_TestCase{
         $Parse = new ReceiveParseAPI($this->raw_post);
         
         $this->assertEquals('joe@example.com', $Parse->get('from'));
-        $this->assertEquals(array(15, 10, 5),  $Parse->get('reps_array'));
+        $this->assertEquals(array(15),  $Parse->get('reps_array'));
     }
 
     /**

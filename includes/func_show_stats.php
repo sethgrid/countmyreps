@@ -24,13 +24,13 @@ function show_stats($who, $totals, $real_head_count, $participating_head_count){
         $percent_participating         = 'N/A';
     }
 
-    $info  = "<p>$who Total:  " . $totals['burpees'] . "<br />" .
+    $info  = "<p>$who Total: " . $totals['burpees'] . "<br />" .
              #<p>$who Totals --  " . $totals['situps'] . 
              #", " . $totals['pushups'] . 
              #", " . $totals['pullups'] . "<br />" . 
              #"Total: $grand_total <br /><br />" . 
              "Reps per person in office: " . $reps_per_person_in_office . "<br />" .
-             "Reps per person per day in office: " . $reps_per_person_per_day . "&nbsp;&nbsp;&nbsp;<br /><br />" .
+             #"Reps per person per day in office: " . $reps_per_person_per_day . "&nbsp;&nbsp;&nbsp;<br /><br />" .
              "Reps per person participating: " . $reps_per_person_participating . "<br />" . 
              "Percent participating: " . $percent_participating . "%<br />";
     

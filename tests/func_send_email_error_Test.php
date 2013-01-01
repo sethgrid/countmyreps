@@ -19,19 +19,19 @@ class SendEmailErrorTest extends PHPUnit_Framework_TestCase{
 
         $result = send_email_error(
                     $user_email   = "user@example.com", 
-                    $addressed_to = "situps-pushups-pullups@countmyreps.com", 
+                    $addressed_to = "burpees@countmyreps.com", 
                     $subject      = "error email", 
                     $time         = "12:12:12 12-12-2012",
                     $Log          = $MockLogger,
                     $Curl         = $MockCurl
                );
         $expected = "There was an error with your CountMyReps Submission.\n" . 
-                    "Make sure that you addressed your email to situps-pushups-pullups@countmyreps.com.\n" . 
-                    "Make sure that your subject line was three numbers separated by commas, like: 24, 12, 6\n" . 
+                    "Make sure that you addressed your email to burpees@countmyreps.com.\n" . 
+                    "Make sure that your subject line was one number, like: 24\n" . 
                     "\n" . 
                     "\n" . 
                     "Details from received message:\n" . 
-                    "Addessed to: situps-pushups-pullups@countmyreps.com\n" . 
+                    "Addessed to: burpees@countmyreps.com\n" . 
                     "Subject: error email\n" . 
                     "Time: 12:12:12 12-12-2012\n";
 

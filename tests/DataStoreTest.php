@@ -61,38 +61,28 @@ class DataStoreTest extends PHPUnit_Extensions_Database_TestCase
         $result_before   = $DataStore->get_all_records_by_user(1);
         $expected_before = array(
                             '2012-11-03' => array(
-                                'situps'  => 25,
-                                'pushups' => 25,
-                                'pullups' => 25
+                                'burpees'  => 75
                             ),
                             '2012-11-04' => array(
-                                'situps'  => 35,
-                                'pushups' => 35,
-                                'pullups' => 35
+                                'burpees'  => 105 
                             )
                         );
 
-        $DataStore->add_reps('user1@example.com', array('situps'=>15, 'pushups'=>15, 'pullups'=>15));
+        $DataStore->add_reps('user1@example.com', array('burpees'=>15));
         
         $result_after   = $DataStore->get_all_records_by_user(1);
         $expected_after = array(
                             '2012-11-03' => array(
-                                'situps'  => 25,
-                                'pushups' => 25,
-                                'pullups' => 25
+                                'burpees'  => 75,
                             ),
                             '2012-11-04' => array(
-                                'situps'  => 35,
-                                'pushups' => 35,
-                                'pullups' => 35
+                                'burpees'  => 105,
                             ),
                             // may be brittle, second may not match in small percent of test runs
                             // possible fix would be to find if similar key exists in result and, 
                             // if so, rename key to a preset value
                             date("Y-m-d H:i:s") => array(
-                                'situps'  => 15,
-                                'pushups' => 15,
-                                'pullups' => 15
+                                'burpees'  => 15,
                             )
                         );
 
@@ -108,15 +98,11 @@ class DataStoreTest extends PHPUnit_Extensions_Database_TestCase
         $result    = $DataStore->get_all_records_by_office('california');
         $expected  = array(
                             '2012-11-03' => array(
-                                'situps'  => 25,
-                                'pushups' => 25,
-                                'pullups' => 25
+                                'burpees'  => 75,
                             ),
                             // the 70s come from the totals of user 1 and 2 from california
                             '2012-11-04' => array(
-                                'situps'  => 70,
-                                'pushups' => 70,
-                                'pullups' => 70
+                                'burpees'  => 210,
                             )
                      );
 
