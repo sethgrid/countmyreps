@@ -31,13 +31,13 @@ if ($user_id){
         ),
         array(
             'office' => 'nh',
-            'display_name' => 'New Hampshire',
+            'display_name' => 'Providence',
             'person_count' => 2,
         ),
         array(
             'office' => 'euro',
             'display_name' => 'Team Euro',
-            'person_count' => 10,
+            'person_count' => 14,
         ),
     );
 
