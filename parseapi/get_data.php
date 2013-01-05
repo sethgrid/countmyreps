@@ -72,7 +72,9 @@ if ($user_id){
     }
 }
 else{
-    $content = "No User Found";
+    $header = "No User Found";
+    $display = array();
+    $display_user = '';
 }
 
 ?>
