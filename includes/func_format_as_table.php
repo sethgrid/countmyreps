@@ -9,6 +9,11 @@ function format_as_table($all_records){
 
     // initialize empty array
     $init_array = Array();
+    // quick fix. What is needed is an auto daily calendar type deal. For now, just manually create months passed (Jan.)
+    for ($d = 1; $d <= 31; $d++){
+	if ($d < 10) $d = "0$d";
+	$init_array["2013-01-$d"] = array('burpees' => 0);
+    }
     for ($d = 1; $d <= date('d'); $d++){
         // add leading zero if needed
 	if ($d < 10) $d = "0$d";
