@@ -24,8 +24,8 @@ function send_email_error($user_email, $addressed_to, $subject, $time, $Log=null
 	
 	// format $message to text/html value
     $msg  = "There was an error with your CountMyReps Submission.\n";
-    $msg .= "Make sure that you addressed your email to burpees@countmyreps.com.\n";
-    $msg .= "Make sure that your subject line was one number, like: 24\n";
+    $msg .= "Make sure that you addressed your email to pullups-pushups-airsquats-situps@countmyreps.com.\n";
+    $msg .= "Make sure that your subject line was FOUR comma separated numbers, like: 5, 10, 15, 20\n";
     $msg .= "\n\n";
     $msg .= "Details from received message:\n";
     $msg .= "Addessed to: $addressed_to\n";

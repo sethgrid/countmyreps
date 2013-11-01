@@ -17,27 +17,32 @@ if ($user_id){
         array(
             'office' => 'california',
             'display_name' => 'Anaheim',
-            'person_count' => 34,
+            'person_count' => 39,
         ),
         array(
             'office' => 'boulder',
             'display_name' => 'Boulder',
-            'person_count' => 48,
+            'person_count' => 63,
         ),
         array(
             'office' => 'denver',
             'display_name' => 'Denver',
-            'person_count' => 26,
+            'person_count' => 70,
         ),
         array(
             'office' => 'nh',
             'display_name' => 'Providence',
-            'person_count' => 2,
+            'person_count' => 4,
         ),
         array(
             'office' => 'euro',
             'display_name' => 'Team Euro',
             'person_count' => 14,
+        ),
+	array(
+	    'office' => 'other',
+            'display_name' => 'Other',
+	    'person_count' => 5,
         ),
     );
 
@@ -64,7 +69,7 @@ if ($user_id){
     $display_user     = $stats_user . $reps_table_user;
 
     $header  = "<h3>Reps for $user</h3>";
-    $header .= 'Company total: ' . $grand_total;
+    $header .= 'Company total: ' . $grand_total . '<br><br><br>';
 
     if ($user == "none"){
         $display_user = '';
@@ -87,15 +92,17 @@ else{
         }
         div.center{
             margin: auto;
+	    margin-left: 10px;
             background-color: white;
-            width: 100%; 
+            width: 3000px; 
             border: 1px solid #C8C8C8; 
             padding-top: 10px;
             padding-bottom: 20px;
        }
        div.inner{
             margin: auto;
-            text-align: center;
+	    margin-left: 10px;
+            text-align: left;
             padding-top: 10px;
             color: #666362;
        }
@@ -111,12 +118,13 @@ else{
 	    color: #666362;
        }   
        td.cell{
-            text-align: center;
+            text-align: left;
             color: #666362;
             vertical-align: top;
        }
        table.icky{
            margin: auto;
+	   margin-left: 10px;
        }
     </style>
 </head>
@@ -135,6 +143,7 @@ else{
 		<td class="cell"><?php echo $display['denver'];?></td>
 		<td class="cell"><?php echo $display['nh'];?></td>
 		<td class="cell"><?php echo $display['euro'];?></td>
+		<td class="cell"><?php echo $display['other'];?></td>
 	</tr>
 	</table>
     </div>
