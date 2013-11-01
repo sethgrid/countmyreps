@@ -2,7 +2,7 @@
 
 require_once("../includes/DataStore.php");        // connect to db
 require_once("../includes/Logger.php");           // grab logger and log the incoming data
-require_once("../includes/ReceiveParseAPI.php"); // grab the ReceiveParseAPI object
+require_once("../includes/ReceiveParseAPI.php");  // grab the ReceiveParseAPI object
     
 $Log = new Logger();
 $Log->prefix("[parseapi post_data] ");

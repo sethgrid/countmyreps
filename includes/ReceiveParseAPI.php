@@ -29,10 +29,11 @@ class ReceiveParseAPI
         $this->text       = $raw_post['text'];
         $this->reps_array = $this->get_reps_array($raw_post['subject']);
         $this->reps_hash  = Array(
-                              'burpees'  => $this->reps_array[0], 
-                              #'situps'  => $this->reps_array[0], 
-                              #'pushups' => $this->reps_array[1], 
-                              #'pullups' => $this->reps_array[2]
+                              #'burpees'  => $this->reps_array[0], 
+                              'pullups'   => $this->reps_array[0], 
+                              'pushups'   => $this->reps_array[1], 
+                              'airsquats' => $this->reps_array[2]
+                              'situps'    => $this->reps_array[3]
                             );
         if (array_key_exists('html', $raw_post)) $this->html = $raw_post['html'];
     }
@@ -44,7 +45,7 @@ class ReceiveParseAPI
      */
     function is_valid(){
         // make sure that we are receiving the right request
-        if (!strstr($this->to, 'burpees@countmyreps.com')){
+        if (!strstr($this->to, 'pullups-pushups-airsquats-situps@countmyreps.com')){
 	    $this->error = "Incorrect address";
             $this->send_error();
             return false;
@@ -102,13 +103,13 @@ class ReceiveParseAPI
      */
     function get_reps_array($reps){
         $return_array = explode(",", $reps);
-        #if (sizeof($return_array) == 3){
-        if (sizeof($return_array) == 1){
+        if (sizeof($return_array) == 4){
+        #if (sizeof($return_array) == 1){
             return $return_array;
         }
-        // if we did not get <strike>three</strike> one elements, something is wrong. populate a three item array, and kick the ball down the court.
-        return array(null);
-        #return array(null, null, null);
+        // if we did not get FOUR elements, something is wrong. populate a three item array, and kick the ball down the court.
+        #return array(null);
+        return array(null, null, null, null);
     }
     /**
      * send_error

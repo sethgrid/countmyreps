@@ -133,8 +133,8 @@ class DataStore
 	        if ($date == $today) $date_key = $record['created_at'];
                 
             // initialize the key to avoid warnings
-            #if (!array_key_exists($date_key, $return)) $return[$date_key] = array('situps'=>0, 'pushups'=>0, 'pullups'=>0);
-            if (!array_key_exists($date_key, $return)) $return[$date_key] = array('burpees'=>0);
+            if (!array_key_exists($date_key, $return)) $return[$date_key] = array('pullups'=>0, 'pushups'=>0, 'airsquats'=>0, 'situps'=>0);
+            #if (!array_key_exists($date_key, $return)) $return[$date_key] = array('burpees'=>0);
            
             // increment
             $return[$date_key][$record['exercise']] += $record['count'];
@@ -163,8 +163,8 @@ class DataStore
             $date = explode(" ", $date);
             $date = $date[0];
 
-            #if (!array_key_exists($date, $return)) $return[$date] = array('situps'=>0, 'pushups'=>0, 'pullups'=>0);
-            if (!array_key_exists($date, $return)) $return[$date] = array('burpees'=>0);
+            if (!array_key_exists($date, $return)) $return[$date] = array('pullups'=>0, 'pushups'=>0, 'airsquats'=>0, 'situps'=>0);
+            #if (!array_key_exists($date, $return)) $return[$date] = array('burpees'=>0);
             $return[$date][$record['exercise']] += $record['count'];
         }
 
