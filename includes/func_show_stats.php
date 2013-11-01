@@ -25,11 +25,9 @@ function show_stats($who, $totals, $real_head_count, $participating_head_count){
     }
 
     $info  = "<p>$who Totals --  " . $totals['pullups'] .
-             "$who Totals --  " . $totals['pushups'] .
-             "$who Totals --  " . $totals['airsquts'] .
-             "$who Totals --  " . $totals['situps'] .
              ", " . $totals['pushups'] .
-             ", " . $totals['pullups'] . "<br />" .
+             ", " . $totals['airsquats'] .
+             ", " . $totals['situps'] . "<br />" .
              "Total: $grand_total <br /><br />" .
              "Reps per person in office: " . $reps_per_person_in_office . "<br />" .
              "Reps per person per day in office: " . $reps_per_person_per_day . "&nbsp;&nbsp;&nbsp;<br /><br />" .

@@ -37,10 +37,10 @@ function format_as_table($all_records){
     // merge to arrays together, over writing with records passed in
     $all_records = array_merge($init_array, $all_records);
 
-    $content = "<table class='data'><th>Date/Time</th><th>Pull-ups</th><th>Push-ups</th><th>Airsquats</th><th>Sit-ups</th>";
-    #$content = "<table class='data'><th>Date/Time</th><th>Burpees</th>";
+    $content = "<table class='data'><th nowrap>Date/Time</th><th nowrap>Pull-ups</th><th nowrap>Push-ups</th><th nowrap>Airsquats</th><th nowrap>Sit-ups</th>";
+    #$content = "<table class='data'><th nowrap>Date/Time</th><th nowrap>Burpees</th>";
     foreach ($all_records as $date => $exercises_array){
-        $content .= "<tr><td>$date</td>";
+        $content .= "<tr><td nowrap>$date</td>";
 	foreach ($exercises_array as $index => $rep){
 	    #if ($index == "burpees")  $burpees = $rep;
 	    if ($index == "pullups")   $pullups = $rep;

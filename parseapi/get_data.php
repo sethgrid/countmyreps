@@ -6,7 +6,7 @@ include("../includes/func_show_stats.php");
 
 $DataStore = new DataStore;
 $content = '';
-$header = 'Burpee Reps';
+$header = 'Reps';
 $display = array();
 
 $user = $_GET['email'];
@@ -88,7 +88,7 @@ else{
         div.center{
             margin: auto;
             background-color: white;
-            width: 1450px; 
+            width: 100%; 
             border: 1px solid #C8C8C8; 
             padding-top: 10px;
             padding-bottom: 20px;
