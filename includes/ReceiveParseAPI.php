@@ -32,7 +32,7 @@ class ReceiveParseAPI
                               #'burpees'  => $this->reps_array[0], 
                               'pullups'   => $this->reps_array[0], 
                               'pushups'   => $this->reps_array[1], 
-                              'airsquats' => $this->reps_array[2]
+                              'airsquats' => $this->reps_array[2],
                               'situps'    => $this->reps_array[3]
                             );
         if (array_key_exists('html', $raw_post)) $this->html = $raw_post['html'];
