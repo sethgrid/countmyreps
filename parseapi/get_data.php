@@ -7,7 +7,12 @@ include("../includes/func_show_stats.php");
 $DataStore = new DataStore;
 $content = '';
 $header = 'Reps';
-$display = array();
+$display = array('california'=>null, 
+		 'boulder'=>null,
+		 'denver'=>null,
+		 'nh'=>null,
+		 'euro'=>null,
+		 'other'=>null,);
 
 $user = $_GET['email'];
 $user_id = $DataStore->user_exists($user);
@@ -59,14 +64,14 @@ if ($user_id){
         $grand_total  += array_sum($totals);
 
         $stats                 = show_stats($office['display_name'], $totals, $office['person_count'], $participating);
-        $display[$office_name] = $stats . $reps_table;
+        $display[$office_name] = $stats . '<br>' . $reps_table;
     }
 
     $all_records_user = $DataStore->get_all_records_by_user($user_id);
     $reps_table_user  = format_as_table($all_records_user);
     $totals_user      = get_totals($all_records_user);
     $stats_user       = show_stats("Your", $totals_user, 1, 1);
-    $display_user     = $stats_user . $reps_table_user;
+    $display_user     = $stats_user . '<br>' . $reps_table_user;
 
     $header  = "<h3>Reps for $user</h3>";
     $header .= 'Company total: ' . $grand_total . '<br><br><br>';
@@ -81,7 +86,6 @@ else{
     $display = array();
     $display_user = '';
 }
-
 ?>
 <html>
 <head>
@@ -94,7 +98,7 @@ else{
             margin: auto;
 	    margin-left: 10px;
             background-color: white;
-            width: 3000px; 
+            width: 100%; 
             border: 1px solid #C8C8C8; 
             padding-top: 10px;
             padding-bottom: 20px;
@@ -119,8 +123,11 @@ else{
        }   
        td.cell{
             text-align: left;
+	    padding-bottom: 50px;
+            padding-top: 10px;
             color: #666362;
             vertical-align: top;
+	    border-bottom: 1px solid gray;
        }
        table.icky{
            margin: auto;
@@ -135,15 +142,31 @@ else{
         <?php
             echo $header;
         ?>
+	<a href="#user">My Results</a> | <a href="#anaheim">Anaheim</a> | 
+	<a href="#boulder">Boulder | <a href="#denver">Denver</a> | 
+	<a href="#rhodeisland">Rhode Island</a> | <a href="#euro">Euro</a> |
+	<a href="#other">Other</a><br><br> 
 	<table class="icky">
 	<tr>
-		<td class="cell"><?php echo $display_user;?></td>
-		<td class="cell"><?php echo $display['california'];?></td>
-		<td class="cell"><?php echo $display['boulder'];?></td>
-		<td class="cell"><?php echo $display['denver'];?></td>
-		<td class="cell"><?php echo $display['nh'];?></td>
-		<td class="cell"><?php echo $display['euro'];?></td>
-		<td class="cell"><?php echo $display['other'];?></td>
+		<td class="cell"><a name="user"></a><?php echo $display_user;?></td>
+	</tr>
+	<tr>
+		<td class="cell"><a name="anaheim"></a><?php echo $display['california'];?></td>
+	<tr>
+	</tr>
+		<td class="cell"><a name="boulder"></a><?php echo $display['boulder'];?></td>
+	<tr>
+	</tr>
+		<td class="cell"><a name="denver"></a><?php echo $display['denver'];?></td>
+	<tr>
+	</tr>
+		<td class="cell"><a name="rhodeisland"></a><?php echo $display['nh'];?></td>
+	<tr>
+	</tr>
+		<td class="cell"><a name="euro"></a><?php echo $display['euro'];?></td>
+	<tr>
+	</tr>
+		<td class="cell"><a name="other"></a><?php echo $display['other'];?></td>
 	</tr>
 	</table>
     </div>
