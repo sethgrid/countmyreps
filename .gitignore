@@ -1,4 +1,5 @@
 .htaccess
+.htaccess_staging
 *.swp
 *.swo
 *.config

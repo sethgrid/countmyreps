@@ -10,7 +10,7 @@ $header = 'Reps';
 $display = array('california'=>null, 
 		 'boulder'=>null,
 		 'denver'=>null,
-		 'nh'=>null,
+		 'rhode_island'=>null,
 		 'euro'=>null,
 		 'other'=>null,);
 
@@ -19,32 +19,32 @@ $user_id = $DataStore->user_exists($user);
 if ($user_id){
 
     $office_info = array( 
-        array(
+        'california' => array(
             'office' => 'california',
             'display_name' => 'Anaheim',
             'person_count' => 39,
         ),
-        array(
+        'boulder' => array(
             'office' => 'boulder',
             'display_name' => 'Boulder',
             'person_count' => 63,
         ),
-        array(
+        'denver' => array(
             'office' => 'denver',
             'display_name' => 'Denver',
             'person_count' => 70,
         ),
-        array(
-            'office' => 'nh',
+        'rhode_island' => array(
+            'office' => 'rhode_island',
             'display_name' => 'Providence',
             'person_count' => 4,
         ),
-        array(
+        'euro' => array(
             'office' => 'euro',
             'display_name' => 'Team Euro',
             'person_count' => 14,
         ),
-	array(
+	'other' => array(
 	    'office' => 'other',
             'display_name' => 'Other',
 	    'person_count' => 5,
@@ -54,7 +54,6 @@ if ($user_id){
     $grand_total = 0;
 
     foreach ($office_info as $office){
-        // creates a dynamic variable name such as $participating_california. Esp important for $display_$ofice_name
         $office_name = $office['office'];
 
         $participating = $DataStore->get_count_by_office($office_name);
@@ -62,17 +61,30 @@ if ($user_id){
         $reps_table    = format_as_table($all_records);
         $totals        = get_totals($all_records);
         $grand_total  += array_sum($totals);
-
         $stats                 = show_stats($office['display_name'], $totals, $office['person_count'], $participating);
         $display[$office_name] = $stats . '<br>' . $reps_table;
-    }
 
+	# capture interesting data back into the info array
+	# now the office_info array is useful if we made it json and available
+	$office_info[$office_name]['totals'] = $totals;
+	$office_info[$office_name]['total'] = array_sum($totals);
+	$office_info[$office_name]['records'] = $all_records;
+    }
     $all_records_user = $DataStore->get_all_records_by_user($user_id);
     $reps_table_user  = format_as_table($all_records_user);
     $totals_user      = get_totals($all_records_user);
     $stats_user       = show_stats("Your", $totals_user, 1, 1);
     $display_user     = $stats_user . '<br>' . $reps_table_user;
 
+    # add the user to the office_info array for jsonifying
+    $office_info['user'] = array(
+    	'office' => '',
+	'display_name' => $user,
+	'person_count' => 1,
+	'totals' => $totals_user,
+	'total' => array_sum($totals_user),
+	'records' => $all_records_user,
+    );
     $header  = "<h3>Reps for $user</h3>";
     $header .= 'Company total: ' . $grand_total . '<br><br><br>';
 
@@ -86,6 +98,12 @@ else{
     $display = array();
     $display_user = '';
 }
+
+if (@$_GET['json']){
+   header('Content-Type: application/json');
+   echo json_encode($office_info);
+}
+else{
 ?>
 <html>
 <head>
@@ -142,10 +160,14 @@ else{
         <?php
             echo $header;
         ?>
-	<a href="#user">My Results</a> | <a href="#anaheim">Anaheim</a> | 
-	<a href="#boulder">Boulder | <a href="#denver">Denver</a> | 
-	<a href="#rhodeisland">Rhode Island</a> | <a href="#euro">Euro</a> |
-	<a href="#other">Other</a><br><br> 
+	<a href="#user">My Results</a> | 
+	<a href="#anaheim">Anaheim (<?php echo $office_info['california']['total'];?>)</a> | 
+	<a href="#boulder">Boulder (<?php echo $office_info['boulder']['total'];?>)</a> | 
+	<a href="#denver">Denver (<?php echo $office_info['denver']['total'];?>)</a> | 
+	<a href="#rhodeisland">Rhode Island (<?php echo $office_info['rhode_island']['total'];?>)</a> |
+	 <a href="#euro">Euro (<?php echo $office_info['euro']['total'];?>)</a> |
+	<a href="#other">Other (<?php echo $office_info['other']['total'];?>)</a> | 
+	<a href=<?php echo "?email=".urlencode($user)."&json=1";?>>JSON</a><br><br> 
 	<table class="icky">
 	<tr>
 		<td class="cell"><a name="user"></a><?php echo $display_user;?></td>
@@ -160,7 +182,7 @@ else{
 		<td class="cell"><a name="denver"></a><?php echo $display['denver'];?></td>
 	<tr>
 	</tr>
-		<td class="cell"><a name="rhodeisland"></a><?php echo $display['nh'];?></td>
+		<td class="cell"><a name="rhodeisland"></a><?php echo $display['rhode_island'];?></td>
 	<tr>
 	</tr>
 		<td class="cell"><a name="euro"></a><?php echo $display['euro'];?></td>
@@ -174,3 +196,4 @@ else{
 
 </body>
 </html>
+<?php } #endif ?>
