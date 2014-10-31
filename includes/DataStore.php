@@ -68,7 +68,7 @@ class DataStore
      * @retrun bool Returns true if the location is set, false otherwise
      */
     function set_location($email, $location){
-        $location = strtolower($location);
+        $location = str_replace(" ", "_", strtolower($location));
 	$query = $this->db->prepare("UPDATE `user` SET `office`=:location WHERE `email`=:email LIMIT 1");
 	$query->bindParam(":email", $email);
 	$query->bindParam(":location", $location);

@@ -52,7 +52,7 @@ class ReceiveParseAPI
         }
 
 	// the subject line may be an office location to link to the sender
-	if (in_array(strtolower($this->subject), array("oc", "denver", "boulder", "providence", "romania", "san francisco", "new york"))){
+	if ($this->location_in_subject($this->subject)){
 	    return true;
 	}
         
@@ -74,7 +74,7 @@ class ReceiveParseAPI
      * return bool if subject is one of the recognized offices
      */
     function location_in_subject($subject){
-	if (in_array(strtolower($subject), array("oc", "denver", "boulder", "providence", "romania", "san francisco", "new york"))){
+	if (in_array(strtolower($subject), array("oc", "denver", "boulder", "providence", "euro", "san francisco", "new york"))){
 		return true;
     	}
 	return false;

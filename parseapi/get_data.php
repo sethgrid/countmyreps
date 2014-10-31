@@ -12,12 +12,13 @@ $display = array('oc'=>null,
 		 'denver'=>null,
 		 'providence'=>null,
 		 'euro'=>null,
+		 'new_york'=>null,
 		 'san_francisco'=>null,);
 
 $user = $_GET['email'];
 $user_id = $DataStore->user_exists($user);
 if ($user_id){
-    $user_office = $DataStore->get_location($user);
+    $user_office = str_replace("_", " ", $DataStore->get_location($user));
     $office_info = array( 
         'oc' => array(
             'office' => 'oc',
@@ -39,14 +40,19 @@ if ($user_id){
             'display_name' => 'Providence',
             'person_count' => 4,
         ),
+        'new_york' => array(
+            'office' => 'new_york',
+            'display_name' => 'New York',
+            'person_count' => 4,
+        ),
         'euro' => array(
             'office' => 'euro',
-            'display_name' => 'Team Euro',
+            'display_name' => 'Euro',
             'person_count' => 14,
         ),
 	'san_francisco' => array(
 	    'office' => 'san_francisco',
-            'display_name' => 'Other',
+            'display_name' => 'San Francisco',
 	    'person_count' => 5,
         ),
     );
@@ -167,6 +173,7 @@ else{
 	<a href="#providence">Providence (<?php echo $office_info['providence']['total'];?>)</a> |
 	 <a href="#euro">Euro (<?php echo $office_info['euro']['total'];?>)</a> |
 	<a href="#san_francisco">San Francisco (<?php echo $office_info['san_francisco']['total'];?>)</a> | 
+	<a href="#new_york">New York (<?php echo $office_info['new_york']['total'];?>)</a> | 
 	<a href=<?php echo "?email=".urlencode($user)."&json=1";?>>JSON</a><br><br> 
 	<table class="icky">
 	<tr>
@@ -189,6 +196,9 @@ else{
 	<tr>
 	</tr>
 		<td class="cell"><a name="san_francisco"></a><?php echo $display['san_francisco'];?></td>
+	</tr>
+	</tr>
+		<td class="cell"><a name="new_york"></a><?php echo $display['new_york'];?></td>
 	</tr>
 	</table>
     </div>
