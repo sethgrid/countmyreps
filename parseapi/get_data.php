@@ -23,27 +23,27 @@ if ($user_id){
         'oc' => array(
             'office' => 'oc',
             'display_name' => 'oc',
-            'person_count' => 39,
+            'person_count' => 53,
         ),
         'boulder' => array(
             'office' => 'boulder',
             'display_name' => 'Boulder',
-            'person_count' => 63,
+            'person_count' => 74,
         ),
         'denver' => array(
             'office' => 'denver',
             'display_name' => 'Denver',
-            'person_count' => 70,
+            'person_count' => 114,
         ),
         'providence' => array(
             'office' => 'providence',
             'display_name' => 'Providence',
-            'person_count' => 4,
+            'person_count' => 8,
         ),
         'new_york' => array(
             'office' => 'new_york',
             'display_name' => 'New York',
-            'person_count' => 4,
+            'person_count' => 3,
         ),
         'euro' => array(
             'office' => 'euro',
@@ -53,7 +53,7 @@ if ($user_id){
 	'san_francisco' => array(
 	    'office' => 'san_francisco',
             'display_name' => 'San Francisco',
-	    'person_count' => 5,
+	    'person_count' => 4,
         ),
     );
 
