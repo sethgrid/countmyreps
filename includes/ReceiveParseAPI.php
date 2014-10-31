@@ -50,6 +50,11 @@ class ReceiveParseAPI
             $this->send_error();
             return false;
         }
+
+	// the subject line may be an office location to link to the sender
+	if (in_array(strtolower($this->subject), array("oc", "denver", "boulder", "providence", "romania", "san francisco", "new york"))){
+	    return true;
+	}
         
         // make sure that we are getting values for all the reps
         foreach ($this->reps_hash as $exercise => $reps){
@@ -62,6 +67,18 @@ class ReceiveParseAPI
 
         return true;
     }
+
+    /**
+     * location_in_subject
+     * @param subject $subject the subject of the email
+     * return bool if subject is one of the recognized offices
+     */
+    function location_in_subject($subject){
+	if (in_array(strtolower($subject), array("oc", "denver", "boulder", "providence", "romania", "san francisco", "new york"))){
+		return true;
+    	}
+	return false;
+    }	
 
     /**
      * get

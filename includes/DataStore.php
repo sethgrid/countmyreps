@@ -62,6 +62,41 @@ class DataStore
     }
 
     /**
+     * set_location
+     * @param string $email The email address that is linked ot the user
+     * @param string $location The office location for the user (oc, denver, boulder, romania, new york, providence, san francisco)
+     * @retrun bool Returns true if the location is set, false otherwise
+     */
+    function set_location($email, $location){
+        $location = strtolower($location);
+	$query = $this->db->prepare("UPDATE `user` SET `office`=:location WHERE `email`=:email LIMIT 1");
+	$query->bindParam(":email", $email);
+	$query->bindParam(":location", $location);
+	$result = $query->execute();
+
+	if ($result){
+	    return true;
+	}
+
+	return false;
+    }
+
+    /**
+     * get_location
+     * @param string $email The email address of the user
+     * @return string The office location
+     */
+    function get_location($email){
+	$query = $this->db->prepare("SELECT `office` from `user` where `email`=:email LIMIT 1");
+	$query->bindParam(":email", $email);
+	$query->execute();
+
+	$data = $query->fetchAll();
+	
+	return $data[0]["office"]; 
+    }
+
+    /**
      * add_reps
      * @param  string $email    The email address associated to these reps we are adding
      * @param  array  $rep_hash Array keys are the exercise, values are the rep count

@@ -7,21 +7,21 @@ include("../includes/func_show_stats.php");
 $DataStore = new DataStore;
 $content = '';
 $header = 'Reps';
-$display = array('california'=>null, 
+$display = array('oc'=>null, 
 		 'boulder'=>null,
 		 'denver'=>null,
-		 'rhode_island'=>null,
+		 'providence'=>null,
 		 'euro'=>null,
-		 'other'=>null,);
+		 'san_francisco'=>null,);
 
 $user = $_GET['email'];
 $user_id = $DataStore->user_exists($user);
 if ($user_id){
-
+    $user_office = $DataStore->get_location($user);
     $office_info = array( 
-        'california' => array(
-            'office' => 'california',
-            'display_name' => 'Anaheim',
+        'oc' => array(
+            'office' => 'oc',
+            'display_name' => 'oc',
             'person_count' => 39,
         ),
         'boulder' => array(
@@ -34,8 +34,8 @@ if ($user_id){
             'display_name' => 'Denver',
             'person_count' => 70,
         ),
-        'rhode_island' => array(
-            'office' => 'rhode_island',
+        'providence' => array(
+            'office' => 'providence',
             'display_name' => 'Providence',
             'person_count' => 4,
         ),
@@ -44,8 +44,8 @@ if ($user_id){
             'display_name' => 'Team Euro',
             'person_count' => 14,
         ),
-	'other' => array(
-	    'office' => 'other',
+	'san_francisco' => array(
+	    'office' => 'san_francisco',
             'display_name' => 'Other',
 	    'person_count' => 5,
         ),
@@ -85,7 +85,7 @@ if ($user_id){
 	'total' => array_sum($totals_user),
 	'records' => $all_records_user,
     );
-    $header  = "<h3>Reps for $user</h3>";
+    $header  = "<h3>Reps for $user ($user_office)</h3>";
     $header .= 'Company total: ' . $grand_total . '<br><br><br>';
 
     if ($user == "none"){
@@ -161,19 +161,19 @@ else{
             echo $header;
         ?>
 	<a href="#user">My Results</a> | 
-	<a href="#anaheim">Anaheim (<?php echo $office_info['california']['total'];?>)</a> | 
+	<a href="#oc">OC (<?php echo $office_info['oc']['total'];?>)</a> | 
 	<a href="#boulder">Boulder (<?php echo $office_info['boulder']['total'];?>)</a> | 
 	<a href="#denver">Denver (<?php echo $office_info['denver']['total'];?>)</a> | 
-	<a href="#rhodeisland">Rhode Island (<?php echo $office_info['rhode_island']['total'];?>)</a> |
+	<a href="#providence">Providence (<?php echo $office_info['providence']['total'];?>)</a> |
 	 <a href="#euro">Euro (<?php echo $office_info['euro']['total'];?>)</a> |
-	<a href="#other">Other (<?php echo $office_info['other']['total'];?>)</a> | 
+	<a href="#san_francisco">San Francisco (<?php echo $office_info['san_francisco']['total'];?>)</a> | 
 	<a href=<?php echo "?email=".urlencode($user)."&json=1";?>>JSON</a><br><br> 
 	<table class="icky">
 	<tr>
 		<td class="cell"><a name="user"></a><?php echo $display_user;?></td>
 	</tr>
 	<tr>
-		<td class="cell"><a name="anaheim"></a><?php echo $display['california'];?></td>
+		<td class="cell"><a name="oc"></a><?php echo $display['oc'];?></td>
 	<tr>
 	</tr>
 		<td class="cell"><a name="boulder"></a><?php echo $display['boulder'];?></td>
@@ -182,13 +182,13 @@ else{
 		<td class="cell"><a name="denver"></a><?php echo $display['denver'];?></td>
 	<tr>
 	</tr>
-		<td class="cell"><a name="rhodeisland"></a><?php echo $display['rhode_island'];?></td>
+		<td class="cell"><a name="providence"></a><?php echo $display['providence'];?></td>
 	<tr>
 	</tr>
 		<td class="cell"><a name="euro"></a><?php echo $display['euro'];?></td>
 	<tr>
 	</tr>
-		<td class="cell"><a name="other"></a><?php echo $display['other'];?></td>
+		<td class="cell"><a name="san_francisco"></a><?php echo $display['san_francisco'];?></td>
 	</tr>
 	</table>
     </div>

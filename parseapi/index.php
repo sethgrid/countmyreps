@@ -26,7 +26,12 @@ if (!$model->user_exists($Data->from)){
     $model->create_user($Data->from);
 }
 
-$model->add_reps($Data->from, $Data->reps_hash);
+if ($Data->location_in_subject($Data->subject)){
+    $model->set_location($Data->from, ($Data->subject));
+} else {
+    $model->add_reps($Data->from, $Data->reps_hash);
+}
+
 // set response to 200
 header('HTTP/1.0 200 Successful', true, 200);
 $Log->write("Transaction Complete");
