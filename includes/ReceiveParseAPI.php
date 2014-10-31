@@ -118,7 +118,10 @@ class ReceiveParseAPI
     function send_error(){
     	// from is the person who sent the email we recieved (ie, the sender who sent to us; the person to which we need to kick the error)
  	    // to is the address they sent to (on our end)
-	    send_email_error($this->from, $this->to, $this->subject, date("Y-m-d H:i:s"));
-	    send_email_error(getenv('HTTP_MY_EMAIL'), $this->to, $this->subject . " (from $this->from)", date("Y-m-d H:i:s"));
+            // only deal with msgs from sendgrid addrs. ignore all others.
+            if (strstr($this->from, "sendgrid")){
+	      send_email_error($this->from, $this->to, $this->subject, date("Y-m-d H:i:s"));
+  	      send_email_error(getenv('HTTP_MY_EMAIL'), $this->to, $this->subject . " (from $this->from)", date("Y-m-d H:i:s"));
+      }
     }
 }
