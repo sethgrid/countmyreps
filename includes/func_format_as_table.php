@@ -6,7 +6,6 @@
  * @return string              an html table
  */
 function format_as_table($all_records){
-
     // initialize empty array
     $init_array = Array();
 /* 

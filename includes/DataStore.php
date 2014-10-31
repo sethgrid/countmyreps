@@ -20,6 +20,8 @@ class DataStore
         $this->db_pass = getenv("HTTP_DB_PASS");
         $this->db_name = getenv("HTTP_DB_NAME");
         $this->db_host = 'localhost';
+	$this->start = "2014-11-01";
+	$this->end = "2014-12-01";
 
         // handle dependency injection
         if ($pdo_connection) $this->db = $pdo_connection;
@@ -148,7 +150,7 @@ class DataStore
      * @return array          array indexed by date, second index by exercise, value is reps
      */
     function get_all_records_by_user($user_id){
-        $query = $this->db->prepare("SELECT * FROM `reps` WHERE `user_id`=:user_id ORDER BY `created_at`");
+        $query = $this->db->prepare("SELECT * FROM `reps` WHERE `user_id`=:user_id AND `created_at` > \"$this->start\" AND `created_at` < \"$this->end\" ORDER BY `created_at`");
         $query->bindParam(":user_id", $user_id);
         $query->execute();
         $records = $query->fetchAll();
@@ -161,11 +163,11 @@ class DataStore
             $date     = $record['created_at'];
             $date     = explode(" ", $date);
             $date     = $date[0];
-	        $today    = date('Y-m-d');
+	    $today    = date('Y-m-d');
             $date_key = $date;
 
             // we want to show all of today's exercises by full time, everything else by day
-	        if ($date == $today) $date_key = $record['created_at'];
+	    if ($date == $today) $date_key = $record['created_at'];
                 
             // initialize the key to avoid warnings
             if (!array_key_exists($date_key, $return)) $return[$date_key] = array('pullups'=>0, 'pushups'=>0, 'airsquats'=>0, 'situps'=>0);
@@ -184,7 +186,7 @@ class DataStore
      * @return array          array indexed by date, second index by exercise, value is reps
      */
     function get_all_records_by_office($office){
-        $query = $this->db->prepare("SELECT * FROM `reps` as r LEFT JOIN `user` as u on r.user_id=u.id WHERE u.office=:office ORDER BY r.created_at");
+        $query = $this->db->prepare("SELECT * FROM `reps` as r LEFT JOIN `user` as u on r.user_id=u.id WHERE u.office=:office AND r.created_at > \"$this->start\" AND r.created_at < \"$this->end\" ORDER BY r.created_at");
         $query->bindParam(":office", $office);
         $query->execute();
         $records = $query->fetchAll();
@@ -202,7 +204,7 @@ class DataStore
             #if (!array_key_exists($date, $return)) $return[$date] = array('burpees'=>0);
             $return[$date][$record['exercise']] += $record['count'];
         }
-
-        return $return;
+        
+	return $return;
     }
 } 
