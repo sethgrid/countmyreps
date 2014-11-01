@@ -19,7 +19,7 @@ $user = $_GET['email'];
 $user_id = $DataStore->user_exists($user);
 if ($user_id){
     $user_office = str_replace("_", " ", $DataStore->get_location($user));
-    if (emtpy(trim($user_office))){
+    if (trim($user_office) == false){ # empty(trim(...) not supported in php version lower than 5.5
     	$user_office = "unknown office - set your office location by sending an email with your office location in the subject";
     }
     $office_info = array( 
