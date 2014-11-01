@@ -23,7 +23,7 @@ class DataStore
         $this->db_pass = getenv("HTTP_DB_PASS");
         $this->db_name = getenv("HTTP_DB_NAME");
         $this->db_host = 'localhost';
-        $this->start = "2014-10-31";
+        $this->start = "2014-11-01";
         $this->end = "2014-12-01";
 
         $this->client = KeenIOClient::factory([
