@@ -23,6 +23,8 @@ class DataStore
         $this->db_pass = getenv("HTTP_DB_PASS");
         $this->db_name = getenv("HTTP_DB_NAME");
         $this->db_host = 'localhost';
+        $this->start = "2014-10-31";
+        $this->end = "2014-12-01";
 
         $this->client = KeenIOClient::factory([
             'projectId' => getenv("KEEN_PROJECT_ID"),
@@ -93,6 +95,41 @@ class DataStore
     }
 
     /**
+     * set_location
+     * @param string $email The email address that is linked ot the user
+     * @param string $location The office location for the user (oc, denver, boulder, romania, new york, providence, san francisco)
+     * @retrun bool Returns true if the location is set, false otherwise
+     */
+    function set_location($email, $location){
+        $location = str_replace(" ", "_", strtolower($location));
+        $query = $this->db->prepare("UPDATE `user` SET `office`=:location WHERE `email`=:email LIMIT 1");
+        $query->bindParam(":email", $email);
+        $query->bindParam(":location", $location);
+        $result = $query->execute();
+
+        if ($result){
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * get_location
+     * @param string $email The email address of the user
+     * @return string The office location
+     */
+    function get_location($email){
+        $query = $this->db->prepare("SELECT `office` from `user` where `email`=:email LIMIT 1");
+        $query->bindParam(":email", $email);
+        $query->execute();
+
+        $data = $query->fetchAll();
+
+        return $data[0]["office"];
+    }
+
+    /**
      * add_reps
      * @param  string $email    The email address associated to these reps we are adding
      * @param  array  $rep_hash Array keys are the exercise, values are the rep count
@@ -152,7 +189,7 @@ class DataStore
      * @return array          array indexed by date, second index by exercise, value is reps
      */
     function get_all_records_by_user($user_id){
-        $query = $this->db->prepare("SELECT * FROM `reps` WHERE `user_id`=:user_id ORDER BY `created_at`");
+        $query = $this->db->prepare("SELECT * FROM `reps` WHERE `user_id`=:user_id AND `created_at` > \"$this->start\" AND `created_at` < \"$this->end\" ORDER BY `created_at`");
         $query->bindParam(":user_id", $user_id);
         $query->execute();
         $records = $query->fetchAll();
@@ -169,8 +206,7 @@ class DataStore
             $date_key = $date;
 
             // we want to show all of today's exercises by full time, everything else by day
-            if ($date == $today) $date_key = $record['created_at'];
-
+        if ($date == $today) $date_key = $record['created_at'];
             // initialize the key to avoid warnings
             if (!array_key_exists($date_key, $return)) $return[$date_key] = array('pullups'=>0, 'pushups'=>0, 'airsquats'=>0, 'situps'=>0);
             #if (!array_key_exists($date_key, $return)) $return[$date_key] = array('burpees'=>0);
@@ -179,7 +215,7 @@ class DataStore
             $return[$date_key][$record['exercise']] += $record['count'];
         }
 
-    return $return;
+        return $return;
     }
 
     /**
@@ -188,7 +224,7 @@ class DataStore
      * @return array          array indexed by date, second index by exercise, value is reps
      */
     function get_all_records_by_office($office){
-        $query = $this->db->prepare("SELECT * FROM `reps` as r LEFT JOIN `user` as u on r.user_id=u.id WHERE u.office=:office ORDER BY r.created_at");
+        $query = $this->db->prepare("SELECT * FROM `reps` as r LEFT JOIN `user` as u on r.user_id=u.id WHERE u.office=:office AND r.created_at > \"$this->start\" AND r.created_at < \"$this->end\" ORDER BY r.created_at");
         $query->bindParam(":office", $office);
         $query->execute();
         $records = $query->fetchAll();
@@ -207,6 +243,6 @@ class DataStore
             $return[$date][$record['exercise']] += $record['count'];
         }
 
-        return $return;
+    return $return;
     }
-} 
+}
