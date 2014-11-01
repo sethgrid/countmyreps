@@ -155,7 +155,7 @@ class DataStore
             $result = $query->execute();
             $event = ['exercise' => [
                 'type' => $exercise,
-                'count' => $reps,
+                'count' => (int)$reps,
                 'user' => $email,
                 'office' => $office
             ]];
