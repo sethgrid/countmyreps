@@ -29,9 +29,9 @@ class ReceiveParseAPI
         $this->text       = $raw_post['text'];
         $this->reps_array = $this->get_reps_array($raw_post['subject']);
         $this->reps_hash  = Array(
-                              #'burpees'  => $this->reps_array[0], 
-                              'pullups'   => $this->reps_array[0], 
-                              'pushups'   => $this->reps_array[1], 
+                              #'burpees'  => $this->reps_array[0],
+                              'pullups'   => $this->reps_array[0],
+                              'pushups'   => $this->reps_array[1],
                               'airsquats' => $this->reps_array[2],
                               'situps'    => $this->reps_array[3]
                             );
@@ -46,20 +46,19 @@ class ReceiveParseAPI
     function is_valid(){
         // make sure that we are receiving the right request
         if (!strstr($this->to, 'pullups-pushups-airsquats-situps@countmyreps.com')){
-	    $this->error = "Incorrect address";
+        $this->error = "Incorrect address";
             $this->send_error();
             return false;
         }
 
-	// the subject line may be an office location to link to the sender
-	if ($this->location_in_subject($this->subject)){
-	    return true;
-	}
-        
+        // the subject line may be an office location to link to the sender
+        if ($this->location_in_subject($this->subject)){
+            return true;
+        }
         // make sure that we are getting values for all the reps
         foreach ($this->reps_hash as $exercise => $reps){
             if (!is_string($exercise) || !is_numeric($reps)){
-		        $this->error = "Non numeric rep encountered";
+                $this->error = "Non numeric rep encountered";
                 $this->send_error();
                 return false;
             }
@@ -74,11 +73,11 @@ class ReceiveParseAPI
      * return bool if subject is one of the recognized offices
      */
     function location_in_subject($subject){
-	if (in_array(strtolower($subject), array("oc", "denver", "boulder", "providence", "euro", "san francisco", "new york"))){
-		return true;
-    	}
-	return false;
-    }	
+    if (in_array(strtolower($subject), array("oc", "denver", "boulder", "providence", "euro", "san francisco", "new york"))){
+        return true;
+        }
+    return false;
+    }   
 
     /**
      * get
@@ -133,12 +132,12 @@ class ReceiveParseAPI
      * @return void
      */
     function send_error(){
-    	// from is the person who sent the email we recieved (ie, the sender who sent to us; the person to which we need to kick the error)
- 	    // to is the address they sent to (on our end)
+        // from is the person who sent the email we recieved (ie, the sender who sent to us; the person to which we need to kick the error)
+        // to is the address they sent to (on our end)
             // only deal with msgs from sendgrid addrs. ignore all others.
             if (strstr($this->from, "sendgrid")){
-	      send_email_error($this->from, $this->to, $this->subject, date("Y-m-d H:i:s"));
-  	      send_email_error(getenv('HTTP_MY_EMAIL'), $this->to, $this->subject . " (from $this->from)", date("Y-m-d H:i:s"));
+          send_email_error($this->from, $this->to, $this->subject, date("Y-m-d H:i:s"));
+          send_email_error(getenv('HTTP_MY_EMAIL'), $this->to, $this->subject . " (from $this->from)", date("Y-m-d H:i:s"));
       }
     }
 }
