@@ -1,4 +1,6 @@
 <?php
+require_once("../vendor/autoload.php");
+use KeenIO\Client\KeenIOClient;
 
 class DataStore
 {
@@ -9,6 +11,7 @@ class DataStore
     private $db_pass;
     private $db_name;
     private $db_host;
+    private $client;
 
     /**
      * constructor
@@ -21,9 +24,19 @@ class DataStore
         $this->db_name = getenv("HTTP_DB_NAME");
         $this->db_host = 'localhost';
 
+        $this->client = KeenIOClient::factory([
+            'projectId' => getenv("KEEN_PROJECT_ID"),
+            'writeKey'  => getenv("KEEN_WRITE_KEY"),
+            'readKey'   => getenv("KEEN_READ_KEY")
+        ]);
+
         // handle dependency injection
-        if ($pdo_connection) $this->db = $pdo_connection;
-        else $this->db = new PDO("mysql:host=$this->db_host;dbname=$this->db_name", $this->db_user, $this->db_pass);
+        try {
+            if ($pdo_connection) $this->db = $pdo_connection;
+            else $this->db = new PDO("mysql:host=$this->db_host;dbname=$this->db_name", $this->db_user, $this->db_pass);
+        } catch (PDOException $e) {
+            echo var_dump("error! $e", true);
+        }
     }
 
     /**
@@ -42,6 +55,24 @@ class DataStore
         }
 
         return 0;
+    }
+
+    /**
+     * get_user_office
+     * @param  string $email The email address that is linked to the user adding reps
+     * @return int           Returns the user id or 0 for non-existent user
+     */
+    function get_user_office($email){
+        $query = $this->db->prepare("SELECT * FROM `user` WHERE `email` = :email");
+        $query->bindParam(":email", $email);
+        $query->execute();
+
+        if ($query->rowCount()){
+            $record = $query->fetch();
+            return $record['office'];
+        }
+
+        return "No Office";
     }
 
     /**
@@ -72,6 +103,7 @@ class DataStore
     function add_reps($email, $rep_hash){
         // grap the user_id
         $user_id = $this->user_exists($email);
+        $office = $this->get_user_office($email);
 
         // put the exercises and reps into the db
         $query = $this->db->prepare("INSERT INTO `reps` (`user_id`,`exercise`,`count`,`created_at`) VALUES (:user_id, :exercise, :count, :date)");
@@ -79,11 +111,18 @@ class DataStore
         $query->bindParam(":exercise", $exercise);
         $query->bindParam(":count", $reps);
         $now = date("Y-m-d H:i:s"); // not using SQL NOW() to avoid three inserts taking place upto a second appart
-	    $query->bindParam(":date", $now);
+        $query->bindParam(":date", $now);
 
         foreach ($rep_hash as $exercise=>$reps){
-	    if ($reps < 0) $reps = 0;
+            if ($reps < 0) $reps = 0;
             $result = $query->execute();
+            $event = ['exercise' => [
+                'type' => $exercise,
+                'count' => $reps,
+                'user' => $email,
+                'office' => $office
+            ]];
+            $this->client->addEvent('exercise', $event);
         }
 
         if ($result){
@@ -101,10 +140,10 @@ class DataStore
     function get_count_by_office($office){
         $query = $this->db->prepare("SELECT COUNT(*) FROM `user` WHERE `office`=:office");
         $query->bindParam(":office", $office);
-	    $query->execute();
+        $query->execute();
         $result = $query->fetchAll();
         // the result is a multidimensional array, the first element on the first result is our count
-	    return $result[0][0];
+        return $result[0][0];
     }
 
     /**
@@ -126,21 +165,21 @@ class DataStore
             $date     = $record['created_at'];
             $date     = explode(" ", $date);
             $date     = $date[0];
-	        $today    = date('Y-m-d');
+            $today    = date('Y-m-d');
             $date_key = $date;
 
             // we want to show all of today's exercises by full time, everything else by day
-	        if ($date == $today) $date_key = $record['created_at'];
-                
+            if ($date == $today) $date_key = $record['created_at'];
+
             // initialize the key to avoid warnings
             if (!array_key_exists($date_key, $return)) $return[$date_key] = array('pullups'=>0, 'pushups'=>0, 'airsquats'=>0, 'situps'=>0);
             #if (!array_key_exists($date_key, $return)) $return[$date_key] = array('burpees'=>0);
-           
+
             // increment
             $return[$date_key][$record['exercise']] += $record['count'];
         }
 
-	return $return;
+    return $return;
     }
 
     /**

@@ -29,9 +29,9 @@ class ReceiveParseAPI
         $this->text       = $raw_post['text'];
         $this->reps_array = $this->get_reps_array($raw_post['subject']);
         $this->reps_hash  = Array(
-                              #'burpees'  => $this->reps_array[0], 
-                              'pullups'   => $this->reps_array[0], 
-                              'pushups'   => $this->reps_array[1], 
+                              #'burpees'  => $this->reps_array[0],
+                              'pullups'   => $this->reps_array[0],
+                              'pushups'   => $this->reps_array[1],
                               'airsquats' => $this->reps_array[2],
                               'situps'    => $this->reps_array[3]
                             );
@@ -50,7 +50,7 @@ class ReceiveParseAPI
             $this->send_error();
             return false;
         }
-        
+
         // make sure that we are getting values for all the reps
         foreach ($this->reps_hash as $exercise => $reps){
             if (!is_string($exercise) || !is_numeric($reps)){
