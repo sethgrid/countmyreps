@@ -175,7 +175,7 @@ class DataStore
      * @return int            The count of users in that office
      */
     function get_count_by_office($office){
-        $query = $this->db->prepare("SELECT COUNT(*) FROM `user` WHERE `office`=:office");
+        $query = $this->db->prepare("select u.email from user as u join reps as r on r.user_id=u.id where r.created_at > \"$this->start\" and office=:office group by u.email");
         $query->bindParam(":office", $office);
         $query->execute();
         $result = $query->fetchAll();
