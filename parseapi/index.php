@@ -3,6 +3,7 @@
 require_once("../includes/DataStore.php");        // connect to db
 require_once("../includes/Logger.php");           // grab logger and log the incoming data
 require_once("../includes/ReceiveParseAPI.php");  // grab the ReceiveParseAPI object
+require_once("../includes/func_send_email_success.php");
     
 $Log = new Logger();
 $Log->prefix("[parseapi post_data] ");
@@ -34,4 +35,5 @@ if ($Data->location_in_subject($Data->subject)){
 
 // set response to 200
 header('HTTP/1.0 200 Successful', true, 200);
+send_email_success($Data->from, $Data->from, "Success!", 0);
 $Log->write("Transaction Complete");
