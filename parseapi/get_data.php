@@ -75,6 +75,7 @@ if ($user_id){
 
 	# capture interesting data back into the info array
 	# now the office_info array is useful if we made it json and available
+	$office_info[$office_name]['participating_count'] = (int)$participating;
 	$office_info[$office_name]['totals'] = $totals;
 	$office_info[$office_name]['total'] = array_sum($totals);
 	$office_info[$office_name]['records'] = $all_records;
