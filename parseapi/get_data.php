@@ -88,7 +88,7 @@ if ($user_id){
 
     # add the user to the office_info array for jsonifying
     $office_info['user'] = array(
-    	'office' => '',
+    	'office' => $user_office,
 	'display_name' => $user,
 	'person_count' => 1,
 	'totals' => $totals_user,
