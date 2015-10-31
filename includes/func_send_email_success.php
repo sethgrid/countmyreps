@@ -31,8 +31,13 @@ function send_email_success($user_email, $addressed_to, $subject, $time, $Log=nu
     $highest_average_office = str_replace("_", "", $best_average_office_);
         $average_reps_per_day = round(get_average_reps_per_day($best_average_office_, $data));
 
+    $office_msg = "";
+    if ($office != ""){
+        $office_msg =  "for the ".$office." office";
+    }
+
     $msg  = "Keep it up!\n";
-    $msg .= "You've logged a total of ".$data['user']['total']." reps.\n";
+    $msg .= "You've logged a total of ".$data['user']['total']." ".$office_msg."!\n";
 
     if ($office == ""){
         $msg .= "You do not have your office set. Send an email with your office name in the subject. Choose from oc, rwc, denver, boulder, providence, euro. This should be sent in ints own email.\n";
