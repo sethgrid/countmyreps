@@ -41,7 +41,7 @@ function send_email_success($user_email, $addressed_to, $subject, $time, $Log=nu
         $msg .= "The $office has a particpation rate of $percent_participating%. Currently, the $highest_average_office doing the best with $average_reps_per_day per person in the office per day.\n";
     }
 
-    $msg .= "The totals are as follows: OC has ".$data['oc']['total'].", RWC has ".$data['rwc']['total'].", Boulder has ".$data['boulder']['total'].", Denver has ".$data['denver']['total'].", Providence has ".$data['providence']['total'].", New York has ".$data['new_york']['total'].", and the Euro team has ".$data['euro']['total'].".\n";
+    $msg .= "The totals are as follows: OC has ".$data['oc']['total'].", RWC has ".$data['rwc']['total'].", Boulder has ".$data['boulder']['total'].", Denver has ".$data['denver']['total'].", Providence has ".$data['providence']['total'].", and the Euro team has ".$data['euro']['total'].".\n";
 
     $text_message = $msg;
     // setup and send the email to the user
