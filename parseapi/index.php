@@ -4,7 +4,7 @@ require_once("../includes/DataStore.php");        // connect to db
 require_once("../includes/Logger.php");           // grab logger and log the incoming data
 require_once("../includes/ReceiveParseAPI.php");  // grab the ReceiveParseAPI object
 require_once("../includes/func_send_email_success.php");
-    
+
 $Log = new Logger();
 $Log->prefix("[parseapi post_data] ");
 $Log->write(print_r($_POST, true));

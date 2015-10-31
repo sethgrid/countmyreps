@@ -21,7 +21,7 @@ class MyCurl{
 
         // set URL and other appropriate options
         curl_setopt($this->ch, CURLOPT_URL, $url);
-        curl_setopt($this->ch, CURLOPT_HEADER, 0); 
+        curl_setopt($this->ch, CURLOPT_HEADER, 0);
         curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
     }
 

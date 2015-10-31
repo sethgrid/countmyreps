@@ -23,8 +23,8 @@ class DataStore
         $this->db_pass = getenv("HTTP_DB_PASS");
         $this->db_name = getenv("HTTP_DB_NAME");
         $this->db_host = 'localhost';
-        $this->start = "2014-11-01";
-        $this->end = "2014-12-01";
+        $this->start = "2015-10-01";
+        $this->end = "2015-12-01";
 
         $this->client = KeenIOClient::factory([
             'projectId' => getenv("KEEN_PROJECT_ID"),
@@ -97,7 +97,7 @@ class DataStore
     /**
      * set_location
      * @param string $email The email address that is linked ot the user
-     * @param string $location The office location for the user (oc, denver, boulder, romania, new york, providence, san francisco)
+     * @param string $location The office location for the user array ("oc", "rwc", "denver", "boulder", "providence", "euro")
      * @retrun bool Returns true if the location is set, false otherwise
      */
     function set_location($email, $location){

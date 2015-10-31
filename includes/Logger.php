@@ -1,5 +1,8 @@
 <?php
 
+date_default_timezone_set('America/Los_Angeles');
+
+
 class Logger{
     /**
      * Simple logger class
@@ -17,12 +20,12 @@ class Logger{
      */
     function __construct($filename = ''){
         if ($filename){
-		    $this->filename = $filename;
+            $this->filename = $filename;
         }
-	    else{
-		    // issue setting this as default in constructor
-		    $this->filename = '/home3/sethammo/www/countmyreps/logs/parseapi.log'; //getenv('HTTP_LOG_FILE');
-	    }
+        else{
+            // issue setting this as default in constructor
+            $this->filename = '/var/www/countmyreps/logs/parseapi.log'; //getenv('HTTP_LOG_FILE');
+        }
         $this->fh = fopen($this->filename, "a");
     }
 
@@ -42,7 +45,7 @@ class Logger{
      * A newline is always appended at the end of the $message
      */
     function write($message = ""){
-	$now = date("Y-m-d H:i:s");
+    $now = date("Y-m-d H:i:s");
         fwrite($this->fh, '[' . $now . '] ' . $this->prefix . $message . "\n");
     }
 

@@ -14,19 +14,19 @@ require_once ("MyCurl.php");
  * This function makes use of the SendGrid PHP library and uses their Web API rather than SMTP
  */
 function send_email_error($user_email, $addressed_to, $subject, $time, $Log=null, $MyCurlRequest=null){
-    
+
     // dependency injections
     if (!$Log){
         $Log = new Logger();
     }
 
-	$Log->prefix("[send email] ");
-	
-	// format $message to text/html value
+    $Log->prefix("[send email] ");
+
+    // format $message to text/html value
     $msg  = "There was an error with your CountMyReps Submission.\n";
     $msg .= "Make sure that you addressed your email to pullups-pushups-airsquats-situps@countmyreps.com.\n";
     $msg .= "Make sure that your subject line was FOUR comma separated numbers, like: 5, 10, 15, 20\n";
-    $msg .= "If you were trying to set your office location, make sure you choose one from: oc, denver, boulder, euro, providence, san francisco, or new york. This should be sent in its own email.\n";
+    $msg .= "If you were trying to set your office location, make sure you choose one from: oc, rwc, denver, boulder, providence, euro. This should be sent in its own email.\n";
     $msg .= "\n\n";
     $msg .= "Details from received message:\n";
     $msg .= "Addessed to: $addressed_to\n";
@@ -37,20 +37,20 @@ function send_email_error($user_email, $addressed_to, $subject, $time, $Log=null
     // setup and send the email to the user
     $sg_username = urlencode(getenv('HTTP_SG_USERNAME'));
     $sg_password = urlencode(getenv('HTTP_SG_PASSWORD'));
-	
+
     $text_message = urlencode($text_message);
-	$subject = urlencode($subject);
-	if (!$subject) $subject = "missing";
+    $subject = urlencode($subject);
+    if (!$subject) $subject = "missing";
 
     // make a curl request over SendGrid's web api
-    $url =  "https://sendgrid.com/api/mail.send.json?" . 
+    $url =  "https://sendgrid.com/api/mail.send.json?" .
             "api_user=$sg_username" .
-            "&api_key=$sg_password" . 
-            "&to=$user_email" . 
-            "&subject=" . trim($subject) . 
+            "&api_key=$sg_password" .
+            "&to=$user_email" .
+            "&subject=" . trim($subject) .
             "&text=" . trim($text_message) .
             "&from=error@countmyreps.com";
-    
+
     // dependency injection
     if (!$MyCurlRequest){
         $MyCurlRequest = new MyCurl($url);
@@ -65,5 +65,5 @@ function send_email_error($user_email, $addressed_to, $subject, $time, $Log=null
         $Log->write($url);
     }
 
-	return $msg;
+    return $msg;
 }

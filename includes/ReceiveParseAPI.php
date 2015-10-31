@@ -1,5 +1,18 @@
 <?php
 include ('func_send_email_error.php');
+
+/**
+ * get
+ * @param array $array   Any array with named keys
+ * @param any   $key     A named index potentially in the array
+ * @param any   $default Default value to return if key does not exist
+ * returns the value of $array[$key] or $default if key does not exist
+ */
+function get($array, $key, $default)
+{
+    return array_key_exists($key, $array) ? $array[$key] : $default;
+}
+
 class ReceiveParseAPI
 {
     /**
@@ -23,11 +36,11 @@ class ReceiveParseAPI
      */
     function __construct($raw_post){
         $this->raw_post   = $raw_post;
-        $this->to         = $raw_post['to'];
-        $this->from       = $this->extract_email($raw_post['from']);
-        $this->subject    = $raw_post['subject'];
-        $this->text       = $raw_post['text'];
-        $this->reps_array = $this->get_reps_array($raw_post['subject']);
+        $this->to         = get($raw_post, 'to', '');
+        $this->from       = $this->extract_email(get($raw_post, 'from', ''));
+        $this->subject    = get($raw_post, 'subject', '');
+        $this->text       = get($raw_post, 'text', '');
+        $this->reps_array = $this->get_reps_array(get($raw_post, 'subject', ''));
         $this->reps_hash  = Array(
                               #'burpees'  => $this->reps_array[0],
                               'pullups'   => $this->reps_array[0],
@@ -73,11 +86,11 @@ class ReceiveParseAPI
      * return bool if subject is one of the recognized offices
      */
     function location_in_subject($subject){
-    if (in_array(strtolower($subject), array("oc", "denver", "boulder", "providence", "euro", "san francisco", "new york"))){
+    if (in_array(strtolower($subject), array("oc", "rwc", "denver", "boulder", "providence", "euro"))){
         return true;
         }
     return false;
-    }   
+    }
 
     /**
      * get
@@ -97,7 +110,7 @@ class ReceiveParseAPI
      *  - FirstName LastName <email@adder.ess>
      *  - <email@adder.ess>
      *  - email@adder.ess
-     */ 
+     */
     function extract_email($from_string){
         // store matches in $matches. Being greedy, first result [0][0] will be "<email@addr.ess>". result [1][0] will be "email@addr.ess"
         preg_match_all('/<(.*)>/', $from_string, $matches);
