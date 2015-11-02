@@ -43,7 +43,7 @@ function send_email_success($user_email, $addressed_to, $subject, $time, $Log=nu
         $msg .= "You do not have your office set. Send an email with your office name in the subject. Choose from oc, rwc, denver, boulder, providence, euro. This should be sent in ints own email.\n";
     } else {
         $percent_participating = round(100 * ((float)$data[$office_]['participating_count']/$data[$office_]['person_count']));
-        $msg .= "The $office has a particpation rate of $percent_participating%. Currently, the $highest_average_office doing the best with $average_reps_per_day per person in the office per day.\n";
+        $msg .= "The $office has a particpation rate of $percent_participating%. Currently, the $highest_average_office office is doing the best with $average_reps_per_day reps per person in the office per day.\n";
     }
 
     $msg .= "The totals are as follows: OC has ".$data['oc']['total'].", RWC has ".$data['rwc']['total'].", Boulder has ".$data['boulder']['total'].", Denver has ".$data['denver']['total'].", Providence has ".$data['providence']['total'].", and the Euro team has ".$data['euro']['total'].".\n";
