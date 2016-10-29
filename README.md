@@ -26,15 +26,18 @@ One can check `/var/log/messages` to see log files being emitted. Remember to bu
 ### TODO:
 
 Code:
-- refactor to be easier to work with
-- consider how to do "team" grouping
-- improve the UI/UX
+- top navigation based on offices
 - implement the JSON endpoint
 - make a RESTful interface
 - implement an integration test
+- refactor to be easier to work with
+- consider how to do "team" grouping
+- improve the UI/UX
+- if we can't connect to the db, should the app try to recover the db with exec commands? Not good separation, but maybe good automation?
 
 Operability:
+- verify nightly back up of the db
 - move logs from `/var/log/messages` to their own location will rotation
 - put monitoring and alerting on mariadb and countmyreps procs
 - monitor for errors in the logs
-- verify nightly back up of the db
+- implement db recover from logs (just in case, and if I have time)

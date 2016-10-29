@@ -31,7 +31,9 @@ func populateOfficesVar() error {
 		if err != nil {
 			return err
 		}
-		Offices = append(Offices, office)
+		if office != "" {
+			Offices = append(Offices, office)
+		}
 	}
 	if rows.Err() != nil {
 		return rows.Err()

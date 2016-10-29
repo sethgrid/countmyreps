@@ -40,7 +40,7 @@ var Offices []string
 var AppName = "countmyreps"
 
 // Version is the semver
-var Version = "2.0.0"
+var Version = "2.0.1"
 
 func init() {
 	var err error
@@ -269,7 +269,7 @@ func parseHandler(w http.ResponseWriter, r *http.Request) {
 			default:
 				exercise = "unknown"
 			}
-			// TODO: move out of loop and use VALUES (), (), (), ()
+			// TODO: move out of loop and use VALUES (), (), (), () and move to db.go
 			_, err = DB.Exec("INSERT INTO reps (exercise, count, user_id) VALUES (?, ?, ?)", exercise, count, userID)
 			if err != nil {
 				logError(r, err, "unable to insert rep")
@@ -279,6 +279,7 @@ func parseHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if inListCaseInsenitive(subject, Offices) {
 		office := formattedOffice(subject)
+		// todo: move to db.go
 		_, err = DB.Exec("UPDATE user SET office=(SELECT id FROM office where name=?) WHERE id=? LIMIT 1", office, userID)
 		if err != nil {
 			logError(r, err, "unable to update user's office")
