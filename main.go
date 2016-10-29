@@ -23,6 +23,7 @@ import (
 	"github.com/facebookgo/flagenv"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
@@ -44,6 +45,12 @@ var DB *sql.DB
 
 // Offices is all the valid Offices
 var Offices []string
+
+// AppName is the app name
+var AppName = "countmyreps"
+
+// Version is the semver
+var Version = "2.0.0"
 
 func init() {
 	var err error
@@ -176,8 +183,8 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", indexHandler)
 	r.HandleFunc("/view", viewHandler)
-	r.HandleFunc("/parseapi/index.php", parseHandler)                                           // backwards compatibility
-	r.PathPrefix("/web/").Handler(http.StripPrefix("/web/", http.FileServer(http.Dir("web/")))) // mux specific workaround for fileserver; todo: use separate mux to avoid filtering these endpoints from logs?
+	r.HandleFunc("/parseapi/index.php", parseHandler)                                  // backwards compatibility
+	r.PathPrefix("/").Handler(http.StripPrefix("", http.FileServer(http.Dir("web/")))) // mux specific workaround for fileserver; todo: use separate mux to avoid filtering these endpoints from logs?
 
 	http.Handle("/", mwPanic(mwLog(r)))
 
@@ -257,11 +264,13 @@ func officeComparisonUpdate(userOffice string, officeStats map[string]Stats) str
 		}
 	}
 	var msg string
+	officePercent := fmt.Sprintf("%d%%", officeStats[userOffice].PercentParticipating)
+	officePerDay := officeStats[userOffice].RepsPerPersonParticipatingPerDay
 	if userOffice == leadOffice {
-		msg = fmt.Sprintf("Your office is leading with %d%% participating, with those Gridders doing %d reps per day!", officeStats[userOffice].PercentParticipating, officeStats[userOffice].RepsPerPersonParticipatingPerDay)
+		msg = fmt.Sprintf("Your office is leading with %s%% participating, with those Gridders doing %d reps per day!", officePercent, officePerDay)
 	} else {
-		msg = fmt.Sprintf("Your office has %d%% participating, with those Gridders doing %d reps per day. With a little effort, you can catch up to the %s office who have %d%% particpating, doing %d reps per day.",
-			officeStats[userOffice].PercentParticipating, officeStats[userOffice].RepsPerPersonParticipatingPerDay,
+		msg = fmt.Sprintf("Your office has %s%% participating, with those Gridders doing %d reps per day. With a little effort, you can catch up to the %s office who have %d%% particpating, doing %d reps per day.",
+			officePercent, officePerDay,
 			leadOffice,
 			officeStats[leadOffice].PercentParticipating, officeStats[leadOffice].RepsPerPersonParticipatingPerDay)
 	}
@@ -318,7 +327,7 @@ func sendEmail(to string, subject string, msg string) error {
 	}
 	toAddr := mail.NewEmail(toName, to)
 
-	msg = `<img src="http://countmyreps.com/web/images/mustache-thin.jpg" style="margin:auto; width:auto; display:block"/>` + msg
+	msg = `<img src="http://countmyreps.com/images/mustache-thin.jpg" style="margin:auto; width:300px; display:block"/>` + msg
 
 	content := mail.NewContent("text/html", msg)
 	m := mail.NewV3MailInit(from, subject, toAddr, content)
@@ -351,8 +360,6 @@ var ErrUnexpectedFmt = "CountMyReps experienced an unexpected error, please try 
 func parseHandler(w http.ResponseWriter, r *http.Request) {
 	// NOTE: SendGrid's Inbound Parse API requires a 200 level response always, even on error, otherwise it will retry
 
-	logDebug(r, fmt.Sprintf("incoming request: %#v", r))
-
 	// errMsg is parsed later to determine if we should send a success or error email
 	var errMsg string
 	var err error
@@ -360,6 +367,8 @@ func parseHandler(w http.ResponseWriter, r *http.Request) {
 	to := r.PostFormValue("to")
 	from := r.PostFormValue("from")
 	subject := r.PostFormValue("subject")
+	logDebug(r, fmt.Sprintf("from: %s; subject: %s, to: %s", from, subject, to))
+
 	defer func() {
 		var mailType string
 		if errMsg != "" {
@@ -388,7 +397,7 @@ func parseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !(to == NewEmail || to == OldEmail) {
+	if !(extractEmailAddr(to) == NewEmail || extractEmailAddr(to) == OldEmail) {
 		logEvent(r, "bad_parse", fmt.Sprintf("recipient not valid countmyreps address: %s", to))
 		errMsg = fmt.Sprintf(ErrToAddrFmt, to)
 		return
@@ -410,16 +419,22 @@ func parseHandler(w http.ResponseWriter, r *http.Request) {
 				errMsg = fmt.Sprintf(ErrSubjectFmt, subject)
 				return
 			}
+			// protect against tricky people who spoof negative reps to other folks
+			if count < 0 {
+				count = -1 * count
+			}
 			var exercise string
 			switch i {
 			case 0:
 				exercise = PullUps
 			case 1:
 				exercise = PushUps
-			case 3:
+			case 2:
 				exercise = Squats
-			case 4:
+			case 3:
 				exercise = SitUps
+			default:
+				exercise = "unknown"
 			}
 			// TODO: move out of loop and use VALUES (), (), (), ()
 			_, err = DB.Exec("INSERT INTO reps (exercise, count, user_id) VALUES (?, ?, ?)", exercise, count, userID)
@@ -471,18 +486,19 @@ func getOrCreateUserID(email string) (int, error) {
 	row := DB.QueryRow(getQ, email)
 	err := row.Scan(&id)
 	if err != nil && err != sql.ErrNoRows {
-		return 0, err
+		return 0, errors.Wrap(err, queryPrinter(getQ, email))
 	} else if err == sql.ErrNoRows {
-		q := "INSERT INTO user (email) VALUES (?)"
+		q := "INSERT INTO user (email, office) VALUES (?, (SELECT id from office where name=\"\"))"
 		res, err := DB.Exec(q, email)
 		if err != nil {
-			return 0, err
+			return 0, errors.Wrap(err, queryPrinter(q, email))
 		}
 		i, err := res.LastInsertId()
 		if err != nil {
 			return 0, err
 		}
 		id = int(i)
+		logEvent(nil, "new_user", email)
 	}
 	return id, nil
 }
@@ -573,12 +589,14 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// getTodaysReps will only grab the latest N submissions
 func getTodaysReps(email string) []RepData {
 	var rd []RepData
-	q := "SELECT reps.exercise, reps.count, reps.created_at FROM reps JOIN user on reps.user_id=user.id WHERE user.email=? AND created_at >= ?"
+	limit := 11
+	q := fmt.Sprintf("SELECT reps.exercise, reps.count, reps.created_at FROM reps JOIN user on reps.user_id=user.id WHERE user.email=? AND created_at >= ? ORDER BY created_at DESC LIMIT %d", limit)
 	rows, err := DB.Query(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day()))
 	if err != nil {
-		logError(nil, err, "unable to get today's reps")
+		logError(nil, errors.Wrap(err, queryPrinter(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day()))), "unable to get today's reps")
 		return rd
 	}
 	for rows.Next() {
@@ -587,23 +605,28 @@ func getTodaysReps(email string) []RepData {
 		var createdAt time.Time
 		err := rows.Scan(&exercise, &count, &createdAt)
 		if err != nil {
-			logError(nil, err, "unable to scan today's reps")
+			logError(nil, errors.Wrap(err, queryPrinter(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day()))), "unable to scan today's reps")
 		}
 		rd = append(rd, RepData{
 			Date:           createdAt.Format(time.Kitchen),
 			ExerciseCounts: map[string]int{exercise: count},
 		})
 	}
+	// reverse the data for presentation needs
+	for i, j := 0, len(rd)-1; i < j; i, j = i+1, j-1 {
+		rd[i], rd[j] = rd[j], rd[i]
+	}
 	return rd
 }
 
 func getUserOffice(email string) string {
+	// leverage the empty value; there is a "" value in the office table
 	var officeName string
 	q := "SELECT office.name FROM user JOIN office ON user.office=office.id WHERE user.email=?"
 	row := DB.QueryRow(q, email)
 	err := row.Scan(&officeName)
-	if err != nil {
-		logError(nil, err, "unable to query for office name")
+	if err != nil && err != sql.ErrNoRows {
+		logError(nil, errors.Wrap(err, queryPrinter(q, email)), "unable to query for office name")
 		return ""
 	}
 	return officeName
@@ -628,7 +651,7 @@ func getOfficeStats() map[string]Stats {
 			if err == sql.ErrNoRows {
 				continue
 			}
-			logError(nil, err, "unable to scan for office head count")
+			logError(nil, errors.Wrap(err, queryPrinter(qHeadCount, officeName)), "unable to scan for office head count")
 		}
 
 		qParticip := "SELECT count(distinct id) from (SELECT user.id FROM reps JOIN user on reps.user_id=user.id JOIN office ON user.office=office.id WHERE office.name=? and reps.created_at > ? AND reps.created_at < ?) participating;"
@@ -638,19 +661,18 @@ func getOfficeStats() map[string]Stats {
 			if err == sql.ErrNoRows {
 				continue
 			}
-			logError(nil, err, "unable to scan for office participation")
+			logError(nil, errors.Wrap(err, queryPrinter(qParticip, officeName, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to scan for office participation")
 			return officeStats
 		}
 
 		qTotals := "select sum(reps.count) from reps left join user on reps.user_id=user.id join office on office.id=user.office where reps.created_at > ? and reps.created_at < ? and office.name=?;"
-		// log.Println(queryPrinter(qTotals, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"), officeName))
 		row = DB.QueryRow(qTotals, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"), officeName)
 		err = row.Scan(&totalReps)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				continue
 			}
-			logError(nil, err, "unable to scan for office totals")
+			logError(nil, errors.Wrap(err, queryPrinter(qTotals, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"), officeName)), "unable to scan for office totals")
 			return officeStats
 		}
 
@@ -687,7 +709,7 @@ func getOfficeReps() map[string][]RepData {
 		q := "SELECT reps.exercise, reps.count, reps.created_at FROM reps JOIN user on reps.user_id=user.id WHERE user.id in (SELECT user.id FROM user JOIN office on user.office=office.id WHERE office.name=?) AND reps.created_at > ? AND reps.created_at < ?"
 		rows, err := DB.Query(q, officeName, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))
 		if err != nil {
-			logError(nil, err, "unable to query for user's reps")
+			logError(nil, errors.Wrap(err, queryPrinter(q, officeName, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to query for user's reps")
 			return nil
 		}
 		repDatas := initRepData()
@@ -697,7 +719,7 @@ func getOfficeReps() map[string][]RepData {
 			var createdAt time.Time
 			err = rows.Scan(&exercise, &count, &createdAt)
 			if err != nil {
-				logError(nil, err, "unable to scan results for user's reps")
+				logError(nil, errors.Wrap(err, queryPrinter(q, officeName, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to scan results for user's reps")
 				return nil
 			}
 			for _, rd := range repDatas {
@@ -732,7 +754,7 @@ func getUserReps(email string) []RepData {
 	q := "SELECT reps.exercise, reps.count, reps.created_at FROM reps JOIN user on reps.user_id=user.id WHERE email=? AND reps.created_at > ? AND reps.created_at < ?"
 	rows, err := DB.Query(q, email, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))
 	if err != nil {
-		logError(nil, err, "unable to query for user's reps")
+		logError(nil, errors.Wrap(err, queryPrinter(q, email, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to query for user's reps")
 		return nil
 	}
 	repDatas := initRepData()
@@ -742,7 +764,7 @@ func getUserReps(email string) []RepData {
 		var createdAt time.Time
 		err = rows.Scan(&exercise, &count, &createdAt)
 		if err != nil {
-			logError(nil, err, "unable to scan results for user's reps")
+			logError(nil, errors.Wrap(err, queryPrinter(q, email, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to scan results for user's reps")
 			return nil
 		}
 		for _, rd := range repDatas {
@@ -852,6 +874,8 @@ func mwLog(h http.Handler) http.Handler {
 
 // logAsString returns the string version of the logs (ie, json marshal)
 func logAsString(l map[string]interface{}) string {
+	l["app"] = AppName
+	l["version"] = Version
 	b, err := json.Marshal(l)
 	if err != nil {
 		log.Printf("unable to marshap map[string]interface{}. Wtf. %v \n %#v", err, l)

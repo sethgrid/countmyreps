@@ -1,5 +1,6 @@
 countmyreps
 countmyreps-linux
+countmyreps-new
 .htaccess
 .htaccess_staging
 *.swp
@@ -7,3 +8,5 @@ countmyreps-linux
 *.config
 *.log
 vendor
+.DS_Store
+setup/.DS_Store
