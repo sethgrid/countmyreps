@@ -12,8 +12,10 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -21,9 +23,9 @@ import (
 	"github.com/facebookgo/flagenv"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
-
-// TODO: have page layout in viewHandler require no manual updating for new offices.
 
 // ViewTemplate displays /view
 var ViewTemplate *template.Template
@@ -40,6 +42,9 @@ var EndDate time.Time
 // DB is the mysql db instance
 var DB *sql.DB
 
+// Offices is all the valid Offices
+var Offices []string
+
 func init() {
 	var err error
 	rand.Seed(time.Now().UnixNano())
@@ -48,13 +53,7 @@ func init() {
 	funcMap := template.FuncMap{
 		// totals sums all the exercises in []RepData
 		"totals": func(d []RepData) int {
-			sum := 0
-			for _, rd := range d {
-				for _, count := range rd.ExerciseCounts {
-					sum += count
-				}
-			}
-			return sum
+			return totalReps(d)
 		},
 		// allow easy converting of strings to JS string (turns freqData{{ OfficeName}}: freqData"OC" -> freqDataOC in JS)
 		"js": func(s string) template.JS {
@@ -106,13 +105,20 @@ func init() {
 }
 
 // We expect the database to have these exact values
-// TODO: it would be interesting to figure out how to have this dynamic (display too)
+// TODO: it would be interesting to figure out how to have this dynamic (display too) and based off the email they send to
 const (
-	PullUps = "Pull Ups"
-	SitUps  = "Sit Ups"
-	PushUps = "Push Ups"
-	Squats  = "Squats"
+	PullUps  = "Pull Ups"
+	SitUps   = "Sit Ups"
+	PushUps  = "Push Ups"
+	Squats   = "Squats"
+	OldEmail = "pullups-pushups-airsquats-situps@countmyreps.com"
+	NewEmail = "pullups-pushups-squats-situps@countmyreps.com"
 )
+
+// TODO: secondary grouping aside from office. Like department or team or multiple.
+
+// Debug turns on more verbose logging
+var Debug bool
 
 func main() {
 	var err error
@@ -135,6 +141,7 @@ func main() {
 	flag.StringVar(&mysqlUser, "mysql-user", "root", "mysql root")
 	flag.StringVar(&mysqlPass, "mysql-pass", "", "mysql pass")
 	flag.StringVar(&mysqlDBname, "mysql-dbname", "countmyreps", "mysql dbname")
+	flag.BoolVar(&Debug, "debug", false, "set flag for verbose logging")
 
 	flagenv.Parse()
 	flag.Parse()
@@ -160,11 +167,17 @@ func main() {
 	}
 	DB.SetConnMaxLifetime(1 * time.Minute)
 
+	err = populateOfficesVar()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// set up routes and serve
 	r := mux.NewRouter()
 	r.HandleFunc("/", indexHandler)
 	r.HandleFunc("/view", viewHandler)
-	r.PathPrefix("/web/").Handler(http.StripPrefix("/web/", http.FileServer(http.Dir("web/")))) // mux specific workaround for fileserver; todo: use separate mux to avoid log filtering?
+	r.HandleFunc("/parseapi/index.php", parseHandler)                                           // backwards compatibility
+	r.PathPrefix("/web/").Handler(http.StripPrefix("/web/", http.FileServer(http.Dir("web/")))) // mux specific workaround for fileserver; todo: use separate mux to avoid filtering these endpoints from logs?
 
 	http.Handle("/", mwPanic(mwLog(r)))
 
@@ -175,11 +188,330 @@ func main() {
 	}
 }
 
+func totalReps(d []RepData) int {
+	sum := 0
+	for _, rd := range d {
+		for _, count := range rd.ExerciseCounts {
+			sum += count
+		}
+	}
+	return sum
+}
+
+func populateOfficesVar() error {
+	q := "SELECT name FROM office"
+	rows, err := DB.Query(q)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var office string
+		err = rows.Scan(&office)
+		if err != nil {
+			return err
+		}
+		Offices = append(Offices, office)
+	}
+	if rows.Err() != nil {
+		return rows.Err()
+	}
+	return nil
+}
+
 // errorHandler is a helper method to log and display errors. When invoked from a parent handler, the parent should then return
 func errorHandler(w http.ResponseWriter, r *http.Request, code int, message string, err error) {
 	logError(r, err, message)
 	w.WriteHeader(code)
 	w.Write([]byte(fmt.Sprintf("%v - %s", http.StatusText(code), message)))
+}
+
+// SendErrorEmail sets up the error message and then calls sendEmail
+func SendErrorEmail(rcpt string, originalAddressTo string, subject string, msg string) error {
+	officeList := strings.Join(Offices, ", ")
+	msgFmt := `
+	<h3>Uh oh!</h3>
+	<p>
+	There was an error with your CountMyReps Submission.<br /><br />
+    Make sure that you addressed your email to %s<br />
+    Make sure that your subject line was FOUR comma separated numbers, like: 5, 10, 15, 20<br />
+    If you were trying to set your office location, make sure you choose one from:<br />
+	%s<br />
+	(This should be sent in its own email).
+    </p>
+	<p>
+    Details from received message:<br />
+    Addessed to: %s<br />
+    Subject: %s<br />
+    Time: %s<br />
+	Error: %s<br />
+	</p>`
+	return sendEmail(rcpt, "Error with your submission", fmt.Sprintf(msgFmt, NewEmail, officeList, originalAddressTo, subject, time.Now().String(), msg))
+}
+
+func officeComparisonUpdate(userOffice string, officeStats map[string]Stats) string {
+	var leadOffice string
+	var currentLeadCount int
+	for office, stats := range officeStats {
+		if stats.RepsPerPersonParticipatingPerDay >= currentLeadCount {
+			leadOffice = office
+		}
+	}
+	var msg string
+	if userOffice == leadOffice {
+		msg = fmt.Sprintf("Your office is leading with %d%% participating, with those Gridders doing %d reps per day!", officeStats[userOffice].PercentParticipating, officeStats[userOffice].RepsPerPersonParticipatingPerDay)
+	} else {
+		msg = fmt.Sprintf("Your office has %d%% participating, with those Gridders doing %d reps per day. With a little effort, you can catch up to the %s office who have %d%% particpating, doing %d reps per day.",
+			officeStats[userOffice].PercentParticipating, officeStats[userOffice].RepsPerPersonParticipatingPerDay,
+			leadOffice,
+			officeStats[leadOffice].PercentParticipating, officeStats[leadOffice].RepsPerPersonParticipatingPerDay)
+	}
+	return msg
+}
+
+// SendSuccessEmail sets up the success message and calls sendEmail
+func SendSuccessEmail(to string) error {
+	office := getUserOffice(to)
+	officeStats := getOfficeStats()
+	var officeMsg string
+	var forTheTeam string
+	if office == "" || office == "Unknown" {
+		officeMsg = fmt.Sprintf("You've not linked your reps to an office. Send an email to %s with your office in the subject line. Valid office choices are: <br />%s", NewEmail, strings.Join(Offices, ", "))
+		forTheTeam = ""
+	} else {
+		officeMsg = officeComparisonUpdate(office, officeStats)
+		forTheTeam = fmt.Sprintf(" for the %s team", office)
+	}
+	total := totalReps(getUserReps(to))
+	days := int(time.Since(StartDate).Hours() / float64(24))
+	if days == 0 {
+		days = 1 // avoid divide by zero
+	}
+	avg := total / days
+
+	var data []string
+	for officeName, stats := range officeStats {
+		data = append(data, fmt.Sprintf("%s: %d", officeName, stats.TotalReps))
+	}
+
+	officeTotals := "The office totals are: " + strings.Join(data, ", ")
+
+	msg := fmt.Sprintf(`<h3>Keep it up!</h3>
+	<p>
+	You've logged a total of %d%s, an average of %d per day.
+	</p>
+	<p>
+	%s
+	</p>
+	<p>
+	%s
+	</p>`, total, forTheTeam, avg, officeMsg, officeTotals)
+
+	return sendEmail(to, "Success!", fmt.Sprintf(msg))
+}
+
+func sendEmail(to string, subject string, msg string) error {
+	from := mail.NewEmail("CountMyReps", "automailer@countmyreps.com")
+	// at this point, all recipients _should_ be firstname.lastname@sendgrid.com or firstname@sendgrid.com
+	toName := strings.Split(to, ".")[0]
+	if strings.Contains(toName, "@") {
+		toName = strings.Split(toName, "@")[0]
+	}
+	toAddr := mail.NewEmail(toName, to)
+
+	msg = `<img src="http://countmyreps.com/web/images/mustache-thin.jpg" style="margin:auto; width:auto; display:block"/>` + msg
+
+	content := mail.NewContent("text/html", msg)
+	m := mail.NewV3MailInit(from, subject, toAddr, content)
+
+	request := sendgrid.GetRequest(os.Getenv("SENDGRID_API_KEY"), "/v3/mail/send", "https://api.sendgrid.com")
+	request.Method = "POST"
+	request.Body = mail.GetRequestBody(m)
+	response, err := sendgrid.API(request)
+	if err != nil {
+		return err
+	}
+	if !(response.StatusCode == http.StatusOK || response.StatusCode == http.StatusAccepted) {
+		return fmt.Errorf("unexpected status code from SendGrid: %d - %q", response.StatusCode, response.Body)
+	}
+	return nil
+}
+
+// ErrSubjectFmt ...
+var ErrSubjectFmt = "CountMyReps was unable to parse your subject. Please provide FOUR comma separated numbers like: `5, 10, 15, 20` where the numbers represent pull ups, push ups, squats, and situps respectively. You provided \"%s\""
+
+// ErrToAddrFmt ...
+var ErrToAddrFmt = "CountMyReps only accepts emails to " + NewEmail + ", you sent to \"%s\""
+
+// ErrFromFmt ...
+var ErrFromFmt = "CountMyReps only accepts mail from the sendgrid domain. You used \"%s\""
+
+// ErrUnexpectedFmt ...
+var ErrUnexpectedFmt = "CountMyReps experienced an unexpected error, please try again later. Error: %s"
+
+func parseHandler(w http.ResponseWriter, r *http.Request) {
+	// NOTE: SendGrid's Inbound Parse API requires a 200 level response always, even on error, otherwise it will retry
+
+	logDebug(r, fmt.Sprintf("incoming request: %#v", r))
+
+	// errMsg is parsed later to determine if we should send a success or error email
+	var errMsg string
+	var err error
+
+	to := r.PostFormValue("to")
+	from := r.PostFormValue("from")
+	subject := r.PostFormValue("subject")
+	defer func() {
+		var mailType string
+		if errMsg != "" {
+			mailType = "error - " + errMsg
+			err = SendErrorEmail(from, to, subject, errMsg)
+		} else {
+			mailType = "success"
+			err = SendSuccessEmail(from)
+		}
+		if err != nil {
+			logError(r, err, "unable to send response email: "+mailType)
+		}
+	}()
+
+	if to == "" || from == "" || subject == "" {
+		logEvent(r, "bad_parse", "unable to determine to or from or subject")
+		errMsg = fmt.Sprintf(ErrUnexpectedFmt, fmt.Sprintf("Missing to, from, or subject: %q, %q, %q", to, from, subject))
+		return
+	}
+
+	from = extractEmailAddr(from)
+
+	if !strings.Contains(from, "@sendgrid.com") {
+		logEvent(r, "bad_parse", fmt.Sprintf("sender not from sendgrid - %s", from))
+		errMsg = fmt.Sprintf(ErrToAddrFmt, from)
+		return
+	}
+
+	if !(to == NewEmail || to == OldEmail) {
+		logEvent(r, "bad_parse", fmt.Sprintf("recipient not valid countmyreps address: %s", to))
+		errMsg = fmt.Sprintf(ErrToAddrFmt, to)
+		return
+	}
+
+	userID, err := getOrCreateUserID(from)
+	if err != nil {
+		logError(r, err, "unable to create/get user")
+		errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to create and/or get user")
+		return
+	}
+
+	reps := strings.Split(subject, ",")
+	if len(reps) == 4 {
+		for i, rep := range reps {
+			count, err := strconv.Atoi(strings.TrimSpace(rep))
+			if err != nil {
+				logError(r, err, fmt.Sprintf("unable to convert %s to int", rep))
+				errMsg = fmt.Sprintf(ErrSubjectFmt, subject)
+				return
+			}
+			var exercise string
+			switch i {
+			case 0:
+				exercise = PullUps
+			case 1:
+				exercise = PushUps
+			case 3:
+				exercise = Squats
+			case 4:
+				exercise = SitUps
+			}
+			// TODO: move out of loop and use VALUES (), (), (), ()
+			_, err = DB.Exec("INSERT INTO reps (exercise, count, user_id) VALUES (?, ?, ?)", exercise, count, userID)
+			if err != nil {
+				logError(r, err, "unable to insert rep")
+				errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to insert into the database")
+				return
+			}
+		}
+	} else if inListCaseInsenitive(subject, Offices) {
+		office := formattedOffice(subject)
+		_, err = DB.Exec("UPDATE user SET office=(SELECT id FROM office where name=?) WHERE id=? LIMIT 1", office, userID)
+		if err != nil {
+			logError(r, err, "unable to update user's office")
+			errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to update office relationship in the database")
+			return
+		}
+	} else {
+		logEvent(r, "bad_parse", fmt.Sprintf("bad subject: %s", subject))
+		errMsg = fmt.Sprintf(ErrSubjectFmt, subject)
+		return
+	}
+}
+
+func formattedOffice(s string) string {
+	for _, office := range Offices {
+		if strings.ToLower(office) == strings.TrimSpace(strings.ToLower(s)) {
+			return office
+		}
+	}
+	logError(nil, fmt.Errorf("unable to determine office"), fmt.Sprintf("attempting to set office to %q", s))
+	return "Unknown"
+}
+
+func inListCaseInsenitive(s string, list []string) bool {
+	s = strings.ToLower(s)
+	s = strings.TrimSpace(s)
+	for _, elem := range list {
+		if s == strings.ToLower(elem) {
+			return true
+		}
+	}
+	return false
+}
+
+func getOrCreateUserID(email string) (int, error) {
+	var id int
+	getQ := "SELECT id FROM user WHERE email=? LIMIT 1"
+	row := DB.QueryRow(getQ, email)
+	err := row.Scan(&id)
+	if err != nil && err != sql.ErrNoRows {
+		return 0, err
+	} else if err == sql.ErrNoRows {
+		q := "INSERT INTO user (email) VALUES (?)"
+		res, err := DB.Exec(q, email)
+		if err != nil {
+			return 0, err
+		}
+		i, err := res.LastInsertId()
+		if err != nil {
+			return 0, err
+		}
+		id = int(i)
+	}
+	return id, nil
+}
+
+// extractEmailAddr gets the email address from the email string
+// John <Smith@example.com>
+// <Smith@example.com>
+// smith@example.com
+// ^^ all gitve smith@example.com
+func extractEmailAddr(email string) string {
+	if !strings.Contains(email, "<") {
+		return email
+	}
+	var extracted []rune
+	var capture bool
+	for _, r := range email {
+		if string(r) == "<" {
+			capture = true
+			continue
+		}
+		if string(r) == ">" {
+			capture = false
+			continue
+		}
+		if capture {
+			extracted = append(extracted, r)
+		}
+	}
+	return string(extracted)
 }
 
 // ViewData is the data needed to populate the view.html template
@@ -522,7 +854,7 @@ func mwLog(h http.Handler) http.Handler {
 func logAsString(l map[string]interface{}) string {
 	b, err := json.Marshal(l)
 	if err != nil {
-		logError(nil, err, "unable to marshal map[string]interface{}")
+		log.Printf("unable to marshap map[string]interface{}. Wtf. %v \n %#v", err, l)
 	}
 	return string(b)
 }
@@ -547,6 +879,13 @@ func logError(r *http.Request, err error, msg string) {
 	logData["error"] = err.Error()
 
 	log.Println(logAsString(logData))
+}
+
+// logDebug captures debug messages and only passes them through if Debug is true
+func logDebug(r *http.Request, msg string) {
+	if Debug {
+		logEvent(r, "debug", msg)
+	}
 }
 
 // everything below is for the logger mw (from noodle)
