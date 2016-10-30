@@ -40,7 +40,7 @@ var Offices []string
 var AppName = "countmyreps"
 
 // Version is the semver
-var Version = "2.0.1"
+var Version = "2.1.0"
 
 func init() {
 	var err error
@@ -171,6 +171,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", indexHandler)
 	r.HandleFunc("/view", viewHandler)
+	r.HandleFunc("/healthcheck", healthcheckHandler)
 	r.HandleFunc("/parseapi/index.php", parseHandler)                                  // backwards compatibility
 	r.PathPrefix("/").Handler(http.StripPrefix("", http.FileServer(http.Dir("web/")))) // mux specific workaround for fileserver; todo: use separate mux to avoid filtering these endpoints from logs?
 
@@ -340,6 +341,18 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, fmt.Sprintf("unable to execute %s template", "view.html"), err)
 		return
+	}
+}
+
+// heathcheckHandler verifies dependencies and reports if they are not in a good state
+func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := DB.Exec("SELECT 1")
+	if err != nil {
+		logError(r, err, "healthcheck failed to query db")
+		w.Write([]byte("database issues\n"))
+		w.WriteHeader(http.StatusServiceUnavailable)
+	} else {
+		w.Write([]byte("database ok\n"))
 	}
 }
 

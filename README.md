@@ -10,6 +10,15 @@ $ go run main.go
 ```
 You will need the `/web` and `/go_templates` directory and their contents relative to the running binary.
 
+### Endpoints
+```
+    /                       # index; has form to input email to take you to /view
+	/view                   # shows stats for you and the offices
+	/healthcheck            # shows if the database is available
+	/parseapi/index.php     # receives data from SendGrid's Inbound ParseAPI (legacy endpoint)
+```
+Anything in `/web` will be available via the file server. So `/web/images` will be available at `/images`.
+
 ### Database
 See `/setup` for a .sql file for setting up the database. There is one unexpected value that should be inserted into the office table: name = "". This allows us to leverage the empty string in Go and avoid null checks.
 
@@ -36,8 +45,8 @@ Code:
 - if we can't connect to the db, should the app try to recover the db with exec commands? Not good separation, but maybe good automation?
 
 Operability:
-- verify nightly back up of the db
+- ~~verify nightly back up of the db~~ [done]
 - move logs from `/var/log/messages` to their own location will rotation
-- put monitoring and alerting on mariadb and countmyreps procs
+- ~~put monitoring and alerting on mariadb and countmyreps procs~~ [done]
 - monitor for errors in the logs
 - implement db recover from logs (just in case, and if I have time)
