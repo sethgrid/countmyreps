@@ -15,6 +15,7 @@ You will need the `/web` and `/go_templates` directory and their contents relati
 ```
     /                       # index; has form to input email to take you to /view
 	/view                   # shows stats for you and the offices
+	/json                   # json payload of the view page; good for anyone who wants to make a js frontend
 	/healthcheck            # shows if the database is available
 	/parseapi/index.php     # receives data from SendGrid's Inbound ParseAPI (legacy endpoint)
 ```

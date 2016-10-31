@@ -90,7 +90,7 @@ TODO - link to github
     {{ range $index, $element := .OfficeStats }}
     <a href="#{{ $index }}">{{ $index }} (total: {{ .TotalReps }})</a> |
     {{ end }}
-    <!-- <a href="#";?>JSON</a> --><br><br>
+    <a href="/json?email={{ .UserEmail }}";?>JSON</a><br><br>
     <table class="icky">
     <tr>
         <td class="cell">

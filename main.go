@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
@@ -171,6 +172,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", indexHandler)
 	r.HandleFunc("/view", viewHandler)
+	r.HandleFunc("/json", jsonHandler)
 	r.HandleFunc("/healthcheck", healthcheckHandler)
 	r.HandleFunc("/parseapi/index.php", parseHandler)                                  // backwards compatibility
 	r.PathPrefix("/").Handler(http.StripPrefix("", http.FileServer(http.Dir("web/")))) // mux specific workaround for fileserver; todo: use separate mux to avoid filtering these endpoints from logs?
@@ -341,6 +343,27 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, fmt.Sprintf("unable to execute %s template", "view.html"), err)
 		return
+	}
+}
+
+func jsonHandler(w http.ResponseWriter, r *http.Request) {
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		errorHandler(w, r, http.StatusBadRequest, "you must provide an email query parameter", nil)
+		return
+	}
+	data := ViewData{
+		UserEmail:   email,
+		TodaysReps:  getTodaysReps(email),
+		UserOffice:  getUserOffice(email),
+		OfficeReps:  getOfficeReps(),
+		OfficeStats: getOfficeStats(),
+		UserReps:    getUserReps(email),
+	}
+	w.Header().Set("content-type", "application/json")
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		errorHandler(w, r, http.StatusInternalServerError, "unable to encode json", err)
 	}
 }
 
