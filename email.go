@@ -11,6 +11,8 @@ import (
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
+// TODO: change to interface so we can unit test
+
 // ErrSubjectFmt ...
 var ErrSubjectFmt = "CountMyReps was unable to parse your subject. Please provide FOUR comma separated numbers like: `5, 10, 15, 20` where the numbers represent pull ups, push ups, squats, and situps respectively. You provided \"%s\""
 
