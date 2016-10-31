@@ -87,11 +87,10 @@ TODO - link to github
     <div class="inner">
 
     <a href="#user">My Results</a> |
-    <a href="#oc">OC (total:)</a> |
-    <a href="#rwc">RWC (total:)</a> |
-    <a href="#denver">Denver (total:)</a> |
-     <a href="#euro">Euro (Total)</a> |
-    <a href="#json=1";?>>JSON</a><br><br>
+    {{ range $index, $element := .OfficeStats }}
+    <a href="#{{ $index }}">{{ $index }} (total: {{ .TotalReps }})</a> |
+    {{ end }}
+    <!-- <a href="#";?>JSON</a> --><br><br>
     <table class="icky">
     <tr>
         <td class="cell">
@@ -116,7 +115,7 @@ TODO - link to github
             <div id='dashboard_user'></div>
         </td>
     </tr>
-    {{range $index, $element := .OfficeStats}}
+    {{ range $index, $element := .OfficeStats }}
     <tr>
         <td class="cell">
             <a name="{{ $index }}"></a>
