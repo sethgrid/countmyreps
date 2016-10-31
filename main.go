@@ -40,7 +40,7 @@ var Offices []string
 var AppName = "countmyreps"
 
 // Version is the semver
-var Version = "2.1.0"
+var Version = "2.2.0"
 
 func init() {
 	var err error
@@ -124,13 +124,13 @@ func main() {
 	var start, end string
 
 	// defaults for start and end vars
-	thisOctoberStart := fmt.Sprintf("%d-10-01", time.Now().Year())
-	thisOctoberEnd := fmt.Sprintf("%d-10-31", time.Now().Year())
+	startDefault := fmt.Sprintf("%d-11-01", time.Now().Year())
+	endDefault := fmt.Sprintf("%d-11-31", time.Now().Year())
 
 	// get flags
 	flag.IntVar(&port, "port", 9126, "port to run site")
-	flag.StringVar(&start, "start-date", thisOctoberStart, "the start date to when querying the db")
-	flag.StringVar(&end, "end-date", thisOctoberEnd, "the end date to when querying the db")
+	flag.StringVar(&start, "start-date", startDefault, "the start date to when querying the db")
+	flag.StringVar(&end, "end-date", endDefault, "the end date to when querying the db")
 	flag.StringVar(&mysqlHost, "mysql-host", "localhost", "mysql host")
 	flag.StringVar(&mysqlPort, "mysql-port", "3306", "mysql port")
 	flag.StringVar(&mysqlUser, "mysql-user", "root", "mysql root")

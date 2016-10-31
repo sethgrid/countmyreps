@@ -101,8 +101,9 @@ TODO - link to github
             {{ else }}
                 <h4>You are not associated with an office!</h4>
             {{ end }}
+            <b>Your Total</b>: {{ totals .UserReps }}<br />
             {{ if .TodaysReps }}
-                Today's Latest Reps:<br />
+                <br />Today's Latest Reps:<br />
                 {{ range .TodaysReps }}
                     {{ $date := .Date }}
                     {{ range $exercise, $count := .ExerciseCounts }}
@@ -138,8 +139,8 @@ TODO - link to github
                     <td>Reps per person participating per day:</td>
                     <td>{{ .RepsPerPersonParticipatingPerDay }}</td>
 
-                    <td></td>
-                    <td></td>
+                    <td>Total Reps</td>
+                    <td>{{ .TotalReps }}</td>
                 </tr>
             </table>
             <div id='dashboard_{{ $index }}'></div>
@@ -152,6 +153,7 @@ TODO - link to github
 
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script>
+// orig src: http://bl.ocks.org/NPashaP/96447623ef4d342ee09b
 function dashboard(id, legendTitle, fData){
     var barColor = 'steelblue';
     function segColor(c){ return {pull_up:"#807dba", push_up:"#e08214",sit_up:"#45ab5d",squat:"#e2147f"}[c]; }
@@ -292,18 +294,18 @@ function dashboard(id, legendTitle, fData){
     }
 
     // function to handle legend.
-    function legend(lD){
+   function legend(lD){
         var leg = {};
 
         // create table for legend.
         var legend = d3.select(id).append("table").attr('class','legend');
+
         // create one row per segment.
-        var tr = legend.selectAll("tr").data(lD).enter().append("tr");
-        legend.append("tr").append("td").attr("colspan","4").attr("align","center").text(legendTitle)
+        var tr = legend.append("tbody").selectAll("tr").data(lD).enter().append("tr");
 
         // create the first column for each segment.
-        tr.append("td").append("svg").attr("width", '12').attr("height", '12').append("rect")
-            .attr("width", '12').attr("height", '12')
+        tr.append("td").append("svg").attr("width", '14').attr("height", '14').append("rect")
+            .attr("width", '14').attr("height", '14')
 			.attr("fill",function(d){ return segColor(d.type); });
 
         // create the second column for each segment.
@@ -317,7 +319,6 @@ function dashboard(id, legendTitle, fData){
         tr.append("td").attr("class",'legendPerc')
             .text(function(d){ return getLegend(d,lD);});
 
-
         // Utility function to be used to update the legend.
         leg.update = function(nD){
             // update the data attached to the row elements.
@@ -329,13 +330,12 @@ function dashboard(id, legendTitle, fData){
             // update the percentage column.
             l.select(".legendPerc").text(function(d){ return getLegend(d,nD);});
         }
-
         function getLegend(d,aD){ // Utility function to compute percentage.
             return d3.format("%")(d.freq/d3.sum(aD.map(function(v){ return v.freq; })));
         }
 
         return leg;
-    }
+   }
 
     // calculate total frequency by segment for all state.
     var tF = ['pull_up','sit_up','push_up', 'squat'].map(function(d){
