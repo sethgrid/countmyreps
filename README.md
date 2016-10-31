@@ -22,7 +22,9 @@ Anything in `/web` will be available via the file server. So `/web/images` will 
 
 ### Database
 See `/setup` for a .sql file for setting up the database. There is one unexpected value that should be inserted into the office table: name = "". This allows us to leverage the empty string in Go and avoid null checks.
+
 Alternatively, you can set up and seed with some test data by running the integration test with:
+
 `$ go test ./integration/... -overwrite-database -no-tear-down -mysql-dbname countmyreps`
 
 ### Simulating Inbound Parse Webhook
