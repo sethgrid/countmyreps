@@ -50,6 +50,7 @@ Code:
 - improve the UI/UX
 - if we can't connect to the db, should the app try to recover the db with exec commands? Not good separation, but maybe good automation?
 - `remote_addr` grabs nginx port; need real IP
+- Implement facebooks' Grace for graceful deployment
 
 Operability:
 - ~~verify nightly back up of the db~~ [done]
