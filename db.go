@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -85,12 +86,33 @@ func getOrCreateUserID(email string) (int, error) {
 	return id, nil
 }
 
+// TODO: expand the office table to have timezone info
+// Alternative: don't use NOW(), use unix timestamp
+func timezoneShift(office string) time.Duration {
+	// timezone on server is set to my local America/Los_Angeles
+	log.Println("checking on ", office)
+	switch office {
+	case "Denver":
+		return time.Hour * 1
+	case "Romania":
+		return time.Hour * 9
+	case "NY":
+		return time.Hour * 3
+	case "London":
+		return time.Hour * 7
+	}
+
+	log.Println("no adjustment")
+	return time.Duration(0)
+}
+
 // getTodaysReps will only grab the latest N submissions
 func getTodaysReps(email string) []RepData {
 	var rd []RepData
 	limit := 11
-	q := fmt.Sprintf("SELECT reps.exercise, reps.count, reps.created_at FROM reps JOIN user on reps.user_id=user.id WHERE user.email=? AND created_at >= ? ORDER BY created_at DESC LIMIT %d", limit)
+	q := fmt.Sprintf("SELECT reps.exercise, reps.count, reps.created_at, office.name FROM reps JOIN user on reps.user_id=user.id JOIN office on user.office=office.id WHERE user.email=? AND created_at >= ? ORDER BY created_at DESC LIMIT %d", limit)
 	rows, err := DB.Query(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day()))
+	logDebug(nil, queryPrinter(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day())))
 	if err != nil {
 		logError(nil, errors.Wrap(err, queryPrinter(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day()))), "unable to get today's reps")
 		return rd
@@ -99,12 +121,13 @@ func getTodaysReps(email string) []RepData {
 		var exercise string
 		var count int
 		var createdAt time.Time
-		err := rows.Scan(&exercise, &count, &createdAt)
+		var office string
+		err := rows.Scan(&exercise, &count, &createdAt, &office)
 		if err != nil {
 			logError(nil, errors.Wrap(err, queryPrinter(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day()))), "unable to scan today's reps")
 		}
 		rd = append(rd, RepData{
-			Date:           createdAt.Format(time.Kitchen),
+			Date:           createdAt.Add(timezoneShift(office)).Format(time.Kitchen),
 			ExerciseCounts: map[string]int{exercise: count},
 		})
 	}
@@ -130,7 +153,7 @@ func getUserOffice(email string) string {
 
 func getOfficeStats() map[string]Stats {
 	officeStats := make(map[string]Stats)
-	for _, officeName := range []string{"OC", "RWC", "Denver", "Euro"} {
+	for _, officeName := range Offices {
 		var headCount int
 		var participating int
 		var totalReps sql.NullInt64
@@ -196,7 +219,7 @@ func getOfficeStats() map[string]Stats {
 func getOfficeReps() map[string][]RepData {
 	officeReps := make(map[string][]RepData)
 	// TODO: DRY it up getUserReps
-	for _, officeName := range []string{"OC", "RWC", "Denver", "Euro"} {
+	for _, officeName := range Offices {
 		q := "SELECT reps.exercise, reps.count, reps.created_at FROM reps JOIN user on reps.user_id=user.id WHERE user.id in (SELECT user.id FROM user JOIN office on user.office=office.id WHERE office.name=?) AND reps.created_at > ? AND reps.created_at < ?"
 		rows, err := DB.Query(q, officeName, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))
 		if err != nil {

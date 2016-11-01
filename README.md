@@ -41,14 +41,15 @@ One can check `/var/log/messages` to see log files being emitted. Remember to bu
 ### TODO:
 
 Code:
-- top navigation based on offices
-- implement the JSON endpoint
+- ~~top navigation based on offices~~ [done]
+- ~~implement the JSON endpoint~~ [done]
 - make a RESTful interface
 - implement an integration test
 - refactor to be easier to work with
 - consider how to do "team" grouping
 - improve the UI/UX
 - if we can't connect to the db, should the app try to recover the db with exec commands? Not good separation, but maybe good automation?
+- `remote_addr` grabs nginx port; need real IP
 
 Operability:
 - ~~verify nightly back up of the db~~ [done]
