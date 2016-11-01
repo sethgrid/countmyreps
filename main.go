@@ -41,7 +41,7 @@ var Offices []string
 var AppName = "countmyreps"
 
 // Version is the semver
-var Version = "2.3.1"
+var Version = "2.3.3"
 
 func init() {
 	var err error
@@ -203,13 +203,19 @@ func parseHandler(w http.ResponseWriter, r *http.Request) {
 	to := r.PostFormValue("to")
 	from := r.PostFormValue("from")
 	subject := r.PostFormValue("subject")
-	logDebug(r, fmt.Sprintf("from: %s; subject: %s, to: %s", from, subject, to))
+
+	logEvent(r, "parseapi", fmt.Sprintf("To: %s, From: %s, Subject: %s", to, from, subject))
 
 	defer func() {
 		var mailType string
 		if errMsg != "" {
 			mailType = "error - " + errMsg
-			err = SendErrorEmail(from, to, subject, errMsg)
+			// we don't want to send out a bunch of responses to spam hitting the server
+			// only send a response if the subject looked vaguely correct or the sender was from sendgrid.
+			parts := strings.Split(subject, ",")
+			if strings.Contains(from, "@sendgrid.com") || len(parts) == 4 {
+				err = SendErrorEmail(from, to, subject, errMsg)
+			}
 		} else {
 			mailType = "success"
 			err = SendSuccessEmail(from)
