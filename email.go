@@ -135,7 +135,7 @@ func SendSuccessEmail(to string) error {
 	// we have to handle this separately because officeMsg contains a literal percent sign and we can't compose it with sprintf.
 	msg = strings.Replace(msg, "--OFFICE_MESSAGE--", officeMsg, 1)
 
-	return EmailSender.SendEmail(to, "Success!", fmt.Sprintf(msg))
+	return EmailSender.SendEmail(to, "Success!", msg)
 }
 
 // extractEmailAddr gets the email address from the email string
