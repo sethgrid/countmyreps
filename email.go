@@ -25,6 +25,52 @@ var ErrFromFmt = "CountMyReps only accepts mail from the sendgrid domain. You us
 // ErrUnexpectedFmt ...
 var ErrUnexpectedFmt = "CountMyReps experienced an unexpected error, please try again later. Error: %s"
 
+// Emailer interface allows us to send emails
+type Emailer interface {
+	SendEmail(to string, subject string, msg string) error
+}
+
+// FakeEmailer is useful for testing
+type FakeEmailer struct {
+	Err error
+}
+
+// SendEmail is a NoOp for the FakeEmailer, returning what ever error we need
+func (f FakeEmailer) SendEmail(to string, subject string, msg string) error {
+	return f.Err
+}
+
+// SendGridEmailer matches the Emailer interface allowing us to send email through SendGrid
+type SendGridEmailer struct{}
+
+// SendEmail sends an email through SendGrid
+func (SendGridEmailer) SendEmail(to string, subject string, msg string) error {
+	from := mail.NewEmail("CountMyReps", "automailer@countmyreps.com")
+	// at this point, all recipients _should_ be firstname.lastname@sendgrid.com or firstname@sendgrid.com
+	toName := strings.Split(to, ".")[0]
+	if strings.Contains(toName, "@") {
+		toName = strings.Split(toName, "@")[0]
+	}
+	toAddr := mail.NewEmail(toName, to)
+
+	msg = `<img src="http://countmyreps.com/images/mustache-thin.jpg" style="margin:auto; width:300px; display:block"/>` + msg
+
+	content := mail.NewContent("text/html", msg)
+	m := mail.NewV3MailInit(from, subject, toAddr, content)
+
+	request := sendgrid.GetRequest(os.Getenv("SENDGRID_API_KEY"), "/v3/mail/send", "https://api.sendgrid.com")
+	request.Method = "POST"
+	request.Body = mail.GetRequestBody(m)
+	response, err := sendgrid.API(request)
+	if err != nil {
+		return err
+	}
+	if !(response.StatusCode == http.StatusOK || response.StatusCode == http.StatusAccepted) {
+		return fmt.Errorf("unexpected status code from SendGrid: %d - %q", response.StatusCode, response.Body)
+	}
+	return nil
+}
+
 // SendErrorEmail sets up the error message and then calls sendEmail
 func SendErrorEmail(rcpt string, originalAddressTo string, subject string, msg string) error {
 	officeList := strings.Join(Offices, ", ")
@@ -45,29 +91,7 @@ func SendErrorEmail(rcpt string, originalAddressTo string, subject string, msg s
     Time: %s<br />
 	Error: %s<br />
 	</p>`
-	return sendEmail(rcpt, "Error with your submission", fmt.Sprintf(msgFmt, NewEmail, officeList, originalAddressTo, subject, time.Now().String(), msg))
-}
-
-func officeComparisonUpdate(userOffice string, officeStats map[string]Stats) string {
-	var leadOffice string
-	var currentLeadCount int
-	for office, stats := range officeStats {
-		if stats.RepsPerPersonParticipatingPerDay >= currentLeadCount {
-			leadOffice = office
-		}
-	}
-	var msg string
-	officePercent := fmt.Sprintf("%d%%", officeStats[userOffice].PercentParticipating)
-	officePerDay := officeStats[userOffice].RepsPerPersonParticipatingPerDay
-	if userOffice == leadOffice {
-		msg = fmt.Sprintf("Your office is leading with %s%% participating, with those Gridders doing %d reps per day!", officePercent, officePerDay)
-	} else {
-		msg = fmt.Sprintf("Your office has %s%% participating, with those Gridders doing %d reps per day. With a little effort, you can catch up to the %s office who have %d%% particpating, doing %d reps per day.",
-			officePercent, officePerDay,
-			leadOffice,
-			officeStats[leadOffice].PercentParticipating, officeStats[leadOffice].RepsPerPersonParticipatingPerDay)
-	}
-	return msg
+	return EmailSender.SendEmail(rcpt, "Error with your submission", fmt.Sprintf(msgFmt, NewEmail, officeList, originalAddressTo, subject, time.Now().String(), msg))
 }
 
 // SendSuccessEmail sets up the success message and calls sendEmail
@@ -108,34 +132,7 @@ func SendSuccessEmail(to string) error {
 	%s
 	</p>`, total, forTheTeam, avg, officeMsg, officeTotals)
 
-	return sendEmail(to, "Success!", fmt.Sprintf(msg))
-}
-
-func sendEmail(to string, subject string, msg string) error {
-	from := mail.NewEmail("CountMyReps", "automailer@countmyreps.com")
-	// at this point, all recipients _should_ be firstname.lastname@sendgrid.com or firstname@sendgrid.com
-	toName := strings.Split(to, ".")[0]
-	if strings.Contains(toName, "@") {
-		toName = strings.Split(toName, "@")[0]
-	}
-	toAddr := mail.NewEmail(toName, to)
-
-	msg = `<img src="http://countmyreps.com/images/mustache-thin.jpg" style="margin:auto; width:300px; display:block"/>` + msg
-
-	content := mail.NewContent("text/html", msg)
-	m := mail.NewV3MailInit(from, subject, toAddr, content)
-
-	request := sendgrid.GetRequest(os.Getenv("SENDGRID_API_KEY"), "/v3/mail/send", "https://api.sendgrid.com")
-	request.Method = "POST"
-	request.Body = mail.GetRequestBody(m)
-	response, err := sendgrid.API(request)
-	if err != nil {
-		return err
-	}
-	if !(response.StatusCode == http.StatusOK || response.StatusCode == http.StatusAccepted) {
-		return fmt.Errorf("unexpected status code from SendGrid: %d - %q", response.StatusCode, response.Body)
-	}
-	return nil
+	return EmailSender.SendEmail(to, "Success!", fmt.Sprintf(msg))
 }
 
 // extractEmailAddr gets the email address from the email string
@@ -163,4 +160,33 @@ func extractEmailAddr(email string) string {
 		}
 	}
 	return string(extracted)
+}
+
+func officeComparisonUpdate(userOffice string, officeStats map[string]Stats) string {
+	var leadOffice string
+	var currentLeadCount int
+	for office, stats := range officeStats {
+		if stats.RepsPerPersonPerDay >= currentLeadCount {
+			leadOffice = office
+			currentLeadCount = stats.RepsPerPersonPerDay
+		}
+	}
+	var msg string
+	if userOffice == leadOffice {
+		msg = fmt.Sprintf("Your office is leading with %d reps per day and %d%% participating, with those Gridders doing %d reps per day!",
+			officeStats[userOffice].RepsPerPersonPerDay,
+			officeStats[userOffice].PercentParticipating,
+			officeStats[userOffice].RepsPerPersonParticipatingPerDay,
+		)
+	} else {
+		msg = fmt.Sprintf("Your office has %d reps per day and %d%% participating, with those Gridders doing %d reps per day. With a little effort, you can catch up to the %s office who are doing %d reps per day, and have %d%% particpating",
+			officeStats[userOffice].RepsPerPersonPerDay,
+			officeStats[userOffice].PercentParticipating,
+			officeStats[userOffice].RepsPerPersonParticipatingPerDay,
+			leadOffice,
+			officeStats[leadOffice].RepsPerPersonPerDay,
+			officeStats[leadOffice].PercentParticipating,
+		)
+	}
+	return msg
 }
