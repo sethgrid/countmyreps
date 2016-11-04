@@ -1,0 +1,12 @@
+version: '2'
+services:
+  mysql:
+    image: beerloves.us:5000/docker/mysql:latest
+
+  countmyreps:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: sample.conf
+    depends_on:
+      - mysql

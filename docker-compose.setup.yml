@@ -1,0 +1,13 @@
+version: '2'
+services:
+  schema:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - mysql
+    env_file: sample.conf
+    command: /opt/schema.sh
+
+  mysql:
+    image: beerloves.us:5000/docker/mysql:latest
