@@ -126,11 +126,14 @@ func SendSuccessEmail(to string) error {
 	You've logged a total of %d%s, an average of %d per day.
 	</p>
 	<p>
-	%s
+	--OFFICE_MESSAGE--
 	</p>
 	<p>
 	%s
-	</p>`, total, forTheTeam, avg, officeMsg, officeTotals)
+	</p>`, total, forTheTeam, avg, officeTotals)
+
+	// we have to handle this separately because officeMsg contains a literal percent sign and we can't compose it with sprintf.
+	msg = strings.Replace(msg, "--OFFICE_MESSAGE--", officeMsg, 1)
 
 	return EmailSender.SendEmail(to, "Success!", fmt.Sprintf(msg))
 }

@@ -31,6 +31,7 @@ func TestOfficeComparisonUpdateLeading(t *testing.T) {
 
 	notWanted := []string{
 		"With a little effort, you can catch up",
+		"(MISSING)",
 	}
 
 	t.Logf("Message body:\n%s", msg)
@@ -59,6 +60,7 @@ func TestOfficeComparisonUpdateNotLeading(t *testing.T) {
 
 	notWanted := []string{
 		"Your office is leading",
+		"(MISSING)",
 	}
 
 	t.Logf("Message body:\n%s", msg)
