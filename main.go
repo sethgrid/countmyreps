@@ -41,7 +41,7 @@ var Offices []string
 var AppName = "countmyreps"
 
 // Version is the semver
-var Version = "2.3.4"
+var Version = "2.3.6"
 
 func init() {
 	var err error
@@ -116,6 +116,9 @@ const (
 // Debug turns on more verbose logging
 var Debug bool
 
+// EmailSender allows us to swap out how we send the email (specifically, SendGrid vs Fake/Test)
+var EmailSender Emailer
+
 func main() {
 	var err error
 
@@ -167,6 +170,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	EmailSender = SendGridEmailer{}
 
 	// set up routes and serve
 	r := mux.NewRouter()
