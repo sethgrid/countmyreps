@@ -13,10 +13,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-const SQLTables = "create_db_v2.sql"
-
 // Port can be overridden with flags
 var Port int
+
+
 
 func TestMain(m *testing.M) {
 	// flag vars
@@ -40,19 +40,20 @@ func TestMain(m *testing.M) {
 	flag.StringVar(&mysqlDBname, "mysql-dbname", "countmyreps_test", "mysql dbname")
 	flag.BoolVar(&overwriteDB, "overwrite-database", false, "allow overwriting database")
 	flag.BoolVar(&noTearDown, "no-tear-down", false, "set to keep the data after the test run")
+	flag.BoolVar(&Debug, "verbose", false "Set flag to show debug logs")
 
 	flagenv.Parse()
 	flag.Parse()
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/", mysqlUser, mysqlPass, mysqlHost, mysqlPort)
 
-	db := setupDB(dsn, mysqlDBname, overwriteDB)
-	err := seed(db, monthStart, monthEnd, today)
+	db := SetupDB(dsn, mysqlDBname, overwriteDB)
+	err := Seed(db, monthStart, monthEnd, today)
 	if err != nil {
 		log.Fatalf("error seeding data: %v", err)
 	}
 	if !noTearDown {
-		defer tearDownDB(db, mysqlDBname)
+		defer TearDownDB(db, mysqlDBname)
 	}
 	// TODO - start countmyreps
 	os.Exit(m.Run())
