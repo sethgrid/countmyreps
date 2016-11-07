@@ -190,7 +190,8 @@ type Server struct {
 	Mux  *mux.Router
 	DB   *sql.DB
 
-	close chan struct{}
+	dbname string
+	close  chan struct{}
 }
 
 // NewServer creates a new server running against the give db
@@ -209,7 +210,7 @@ func NewServer(db *sql.DB, port int, emailer Emailer) *Server {
 	r.HandleFunc("/parseapi/index.php", s.ParseHandler)                                // backwards compatibility
 	r.PathPrefix("/").Handler(http.StripPrefix("", http.FileServer(http.Dir("web/")))) // mux specific workaround for fileserver; todo: use separate mux to avoid filtering these endpoints from logs?
 
-	http.Handle("/", mwPanic(mwLog(r)))
+	r.Handle("/", mwPanic(mwLog(r)))
 
 	s.Mux = r
 	return s
