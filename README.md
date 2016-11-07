@@ -58,3 +58,64 @@ Operability:
 - ~~put monitoring and alerting on mariadb and countmyreps procs~~ [done]
 - monitor for errors in the logs
 - implement db recover from logs (just in case, and if I have time)
+
+### Docker
+#### Source variables
+We make pretty extensive use of environment variables here, it'd be a good idea to source them initially.  Feel free to update to your liking.
+
+```bash
+$ source sample.conf
+```
+
+#### Setup MySQL
+Next up, setup database.
+
+```bash
+$ docker-compose build
+
+$ docker-compose run -e MYSQL_ROOT_PASSWORD=my_awesome_password --entrypoint /opt/entrypoint.sh --u root --no-deps -T mysql
+Creating countmyreps_data_1
+root
+>> mysql - waiting to become available
+161106 05:13:06 mysqld_safe Logging to '/var/log/mysqld.log'.
+161106 05:13:06 mysqld_safe Starting mysqld daemon with databases from /var/lib/mysql
+>> mysql - not started
+open
+Warning: Using a password on the command line interface can be insecure.
+Warning: Using a password on the command line interface can be insecure.
+161106 05:13:08 mysqld_safe mysqld from pid file /var/run/mysqld/mysqld.pid ended
+>> mysql - waiting to shutdown
+
+$ docker-compose up -d mysql
+Starting countmyreps_data_1
+Creating countmyreps_mysql_1
+```
+
+#### Import Schema
+Now that mysql is up and running, we need to create the initial database and tables.
+```bash
+$ docker-compose exec -T mysql mysql -u root -pmy_awesome_password -e "CREATE DATABASE IF NOT EXISTS $MYSQL_DBNAME;"
+Warning: Using a password on the command line interface can be insecure.
+
+$ docker-compose exec -T mysql mysql -u root -pmy_awesome_password -e "GRANT ALL PRIVILEGES ON $MYSQL_DBNAME.* to '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASS';"
+Warning: Using a password on the command line interface can be insecure.
+
+$ docker-compose -f docker-compose.yml -f docker-compose.setup.yml up schema
+Starting countmyreps_data_1
+countmyreps_mysql_1 is up-to-date
+Recreating countmyreps_schema_1
+Attaching to countmyreps_schema_1
+countmyreps_schema_1 exited with code 0
+```
+
+#### Run service
+Everything should now be set to run
+
+```bash
+$ docker-compose up countmyreps
+Starting countmyreps_data_1
+countmyreps_mysql_1 is up-to-date
+Creating countmyreps_countmyreps_1
+Attaching to countmyreps_countmyreps_1
+countmyreps_1  | 2016/11/07 22:52:03 starting on :9126
+```

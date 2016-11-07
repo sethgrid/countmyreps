@@ -1,13 +1,10 @@
 version: '2'
 services:
   schema:
+    image: beerloves.us:5000/sendgrid/countmyreps:latest
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
       - mysql
-    env_file: sample.conf
-    command: /opt/schema.sh
-
-  mysql:
-    image: beerloves.us:5000/docker/mysql:latest
+    command: bash -c "mysql -u $MYSQL_USER -p$MYSQL_PASS -h mysql $MYSQL_DBNAME < /opt/go/src/github.com/sethgrid/countmyreps/setup/create_db_v2.sql"

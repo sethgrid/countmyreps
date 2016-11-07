@@ -2,11 +2,19 @@ version: '2'
 services:
   mysql:
     image: beerloves.us:5000/docker/mysql:latest
+    volumes_from:
+      - data:rw
+  data:
+    image: centos:7
+    volumes:
+      - /var/lib/mysql
 
   countmyreps:
+    image: beerloves.us:5000/sendgrid/countmyreps:latest
     build:
       context: .
       dockerfile: Dockerfile
-    env_file: sample.conf
     depends_on:
       - mysql
+    ports:
+      - ${PORT}:${PORT}

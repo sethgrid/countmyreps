@@ -129,7 +129,7 @@ func main() {
 
 	// defaults for start and end vars
 	startDefault := fmt.Sprintf("%d-11-01", time.Now().Year())
-	endDefault := fmt.Sprintf("%d-11-31", time.Now().Year())
+	endDefault := fmt.Sprintf("%d-11-30", time.Now().Year())
 
 	// get flags
 	flag.IntVar(&port, "port", 9126, "port to run site")
