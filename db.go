@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -20,9 +19,9 @@ func totalReps(d []RepData) int {
 	return sum
 }
 
-func populateOfficesVar() error {
+func populateOfficesVar(db *sql.DB) error {
 	q := "SELECT name FROM office"
-	rows, err := DB.Query(q)
+	rows, err := db.Query(q)
 	if err != nil {
 		return err
 	}
@@ -63,16 +62,16 @@ func inListCaseInsenitive(s string, list []string) bool {
 	return false
 }
 
-func getOrCreateUserID(email string) (int, error) {
+func getOrCreateUserID(db *sql.DB, email string) (int, error) {
 	var id int
 	getQ := "SELECT id FROM user WHERE email=? LIMIT 1"
-	row := DB.QueryRow(getQ, email)
+	row := db.QueryRow(getQ, email)
 	err := row.Scan(&id)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, errors.Wrap(err, queryPrinter(getQ, email))
 	} else if err == sql.ErrNoRows {
 		q := "INSERT INTO user (email, office) VALUES (?, (SELECT id from office where name=\"\"))"
-		res, err := DB.Exec(q, email)
+		res, err := db.Exec(q, email)
 		if err != nil {
 			return 0, errors.Wrap(err, queryPrinter(q, email))
 		}
@@ -90,7 +89,6 @@ func getOrCreateUserID(email string) (int, error) {
 // Alternative: don't use NOW(), use unix timestamp
 func timezoneShift(office string) time.Duration {
 	// timezone on server is set to my local America/Los_Angeles
-	log.Println("checking on ", office)
 	switch office {
 	case "Denver":
 		return time.Hour * 1
@@ -102,16 +100,15 @@ func timezoneShift(office string) time.Duration {
 		return time.Hour * 7
 	}
 
-	log.Println("no adjustment")
 	return time.Duration(0)
 }
 
 // getTodaysReps will only grab the latest N submissions
-func getTodaysReps(email string) []RepData {
+func getTodaysReps(db *sql.DB, email string) []RepData {
 	var rd []RepData
 	limit := 11
 	q := fmt.Sprintf("SELECT reps.exercise, reps.count, reps.created_at, office.name FROM reps JOIN user on reps.user_id=user.id JOIN office on user.office=office.id WHERE user.email=? AND created_at >= ? ORDER BY created_at DESC LIMIT %d", limit)
-	rows, err := DB.Query(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day()))
+	rows, err := db.Query(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day()))
 	logDebug(nil, queryPrinter(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day())))
 	if err != nil {
 		logError(nil, errors.Wrap(err, queryPrinter(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day()))), "unable to get today's reps")
@@ -138,11 +135,11 @@ func getTodaysReps(email string) []RepData {
 	return rd
 }
 
-func getUserOffice(email string) string {
+func getUserOffice(db *sql.DB, email string) string {
 	// leverage the empty value; there is a "" value in the office table
 	var officeName string
 	q := "SELECT office.name FROM user JOIN office ON user.office=office.id WHERE user.email=?"
-	row := DB.QueryRow(q, email)
+	row := db.QueryRow(q, email)
 	err := row.Scan(&officeName)
 	if err != nil && err != sql.ErrNoRows {
 		logError(nil, errors.Wrap(err, queryPrinter(q, email)), "unable to query for office name")
@@ -151,7 +148,7 @@ func getUserOffice(email string) string {
 	return officeName
 }
 
-func getOfficeStats() map[string]Stats {
+func getOfficeStats(db *sql.DB) map[string]Stats {
 	officeStats := make(map[string]Stats)
 	for _, officeName := range Offices {
 		var headCount int
@@ -159,7 +156,7 @@ func getOfficeStats() map[string]Stats {
 		var totalReps sql.NullInt64
 
 		qHeadCount := "SELECT head_count FROM office WHERE office.name=?"
-		row := DB.QueryRow(qHeadCount, officeName)
+		row := db.QueryRow(qHeadCount, officeName)
 		err := row.Scan(&headCount)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -169,7 +166,7 @@ func getOfficeStats() map[string]Stats {
 		}
 
 		qParticip := "SELECT count(distinct id) from (SELECT user.id FROM reps JOIN user on reps.user_id=user.id JOIN office ON user.office=office.id WHERE office.name=? and reps.created_at > ? AND reps.created_at < ?) participating;"
-		row = DB.QueryRow(qParticip, officeName, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))
+		row = db.QueryRow(qParticip, officeName, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))
 		err = row.Scan(&participating)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -180,7 +177,7 @@ func getOfficeStats() map[string]Stats {
 		}
 
 		qTotals := "select sum(reps.count) from reps left join user on reps.user_id=user.id join office on office.id=user.office where reps.created_at > ? and reps.created_at < ? and office.name=?;"
-		row = DB.QueryRow(qTotals, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"), officeName)
+		row = db.QueryRow(qTotals, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"), officeName)
 		err = row.Scan(&totalReps)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -216,12 +213,12 @@ func getOfficeStats() map[string]Stats {
 	return officeStats
 }
 
-func getOfficeReps() map[string][]RepData {
+func getOfficeReps(db *sql.DB) map[string][]RepData {
 	officeReps := make(map[string][]RepData)
 	// TODO: DRY it up getUserReps
 	for _, officeName := range Offices {
 		q := "SELECT reps.exercise, reps.count, reps.created_at FROM reps JOIN user on reps.user_id=user.id WHERE user.id in (SELECT user.id FROM user JOIN office on user.office=office.id WHERE office.name=?) AND reps.created_at > ? AND reps.created_at < ?"
-		rows, err := DB.Query(q, officeName, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))
+		rows, err := db.Query(q, officeName, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))
 		if err != nil {
 			logError(nil, errors.Wrap(err, queryPrinter(q, officeName, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to query for user's reps")
 			return nil
@@ -252,9 +249,9 @@ func getOfficeReps() map[string][]RepData {
 	return officeReps
 }
 
-func getUserReps(email string) []RepData {
+func getUserReps(db *sql.DB, email string) []RepData {
 	q := "SELECT reps.exercise, reps.count, reps.created_at FROM reps JOIN user on reps.user_id=user.id WHERE email=? AND reps.created_at > ? AND reps.created_at < ?"
-	rows, err := DB.Query(q, email, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))
+	rows, err := db.Query(q, email, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))
 	if err != nil {
 		logError(nil, errors.Wrap(err, queryPrinter(q, email, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to query for user's reps")
 		return nil

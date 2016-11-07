@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"net"
+
 	"github.com/facebookgo/flagenv"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -30,9 +32,6 @@ var StartDate time.Time
 
 // EndDate is the latest date we will query in the db
 var EndDate time.Time
-
-// DB is the mysql db instance
-var DB *sql.DB
 
 // Offices is all the valid Offices
 var Offices []string
@@ -100,6 +99,7 @@ func init() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
 }
 
 // We expect the database to have these exact values
@@ -155,40 +155,93 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// connect to the db
-	DB, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlDBname))
+	db := SetupDB(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlDBname)
+
+	log.Printf("starting on :%d", port)
+	s := NewServer(db, port, SendGridEmailer{})
+
+	if err := s.Serve(); err != nil {
+		log.Println("Unexpected error serving: ", err.Error())
+	}
+}
+
+// SetupDB initialized the DB conn and grabs initial data needed for the app (ie, Offices)
+func SetupDB(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlDBname string) *sql.DB {
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlDBname))
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = DB.Ping()
+	err = db.Ping()
 	if err != nil {
 		log.Fatal(err)
 	}
-	DB.SetConnMaxLifetime(1 * time.Minute)
+	db.SetConnMaxLifetime(1 * time.Minute)
 
-	err = populateOfficesVar()
+	err = populateOfficesVar(db)
 	if err != nil {
 		log.Fatal(err)
 	}
+	return db
+}
 
-	EmailSender = SendGridEmailer{}
+// Server contains the settings needed to run the server
+type Server struct {
+	Port int
+	Mux  *mux.Router
+	DB   *sql.DB
 
-	// set up routes and serve
+	close chan struct{}
+}
+
+// NewServer creates a new server running against the give db
+func NewServer(db *sql.DB, port int, emailer Emailer) *Server {
+	s := &Server{}
+	s.Port = port
+	s.DB = db
+	s.close = make(chan struct{})
+	EmailSender = emailer // TODO: should this be on the server? How will that pass down?
+
 	r := mux.NewRouter()
-	r.HandleFunc("/", indexHandler)
-	r.HandleFunc("/view", viewHandler)
-	r.HandleFunc("/json", jsonHandler)
-	r.HandleFunc("/healthcheck", healthcheckHandler)
-	r.HandleFunc("/parseapi/index.php", parseHandler)                                  // backwards compatibility
+	r.HandleFunc("/", s.IndexHandler)
+	r.HandleFunc("/view", s.ViewHandler)
+	r.HandleFunc("/json", s.JSONHandler)
+	r.HandleFunc("/healthcheck", s.HealthcheckHandler)
+	r.HandleFunc("/parseapi/index.php", s.ParseHandler)                                // backwards compatibility
 	r.PathPrefix("/").Handler(http.StripPrefix("", http.FileServer(http.Dir("web/")))) // mux specific workaround for fileserver; todo: use separate mux to avoid filtering these endpoints from logs?
 
 	http.Handle("/", mwPanic(mwLog(r)))
 
-	log.Printf("starting on :%d", port)
+	s.Mux = r
+	return s
+}
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
-		log.Println("Unexpected error serving: ", err.Error())
+// Serve blocks and starts a server
+func (s *Server) Serve() error {
+	errc := make(chan error)
+	if s.Port == 0 {
+		l, err := net.Listen("tcp", ":0")
+		if err != nil {
+			errc <- err
+		}
+		s.Port = l.Addr().(*net.TCPAddr).Port
+		errc <- http.Serve(l, s.Mux)
+	} else {
+		errc <- http.ListenAndServe(fmt.Sprintf(":%d", s.Port), s.Mux)
 	}
+	for {
+		select {
+		case <-s.close:
+			return nil
+		case err := <-errc:
+			return err
+		}
+	}
+}
+
+// Close terminates the server
+func (s *Server) Close() error {
+	close(s.close)
+	return nil
 }
 
 // errorHandler is a helper method to log and display errors. When invoked from a parent handler, the parent should then return
@@ -198,7 +251,8 @@ func errorHandler(w http.ResponseWriter, r *http.Request, code int, message stri
 	w.Write([]byte(fmt.Sprintf("%v - %s", http.StatusText(code), message)))
 }
 
-func parseHandler(w http.ResponseWriter, r *http.Request) {
+// ParseHandler handles SendGrid's inbound parse api
+func (s *Server) ParseHandler(w http.ResponseWriter, r *http.Request) {
 	// NOTE: SendGrid's Inbound Parse API requires a 200 level response always, even on error, otherwise it will retry
 
 	// errMsg is parsed later to determine if we should send a success or error email
@@ -219,11 +273,11 @@ func parseHandler(w http.ResponseWriter, r *http.Request) {
 			// only send a response if the subject looked vaguely correct or the sender was from sendgrid.
 			parts := strings.Split(subject, ",")
 			if strings.Contains(from, "@sendgrid.com") || len(parts) == 4 {
-				err = SendErrorEmail(from, to, subject, errMsg)
+				err = s.SendErrorEmail(from, to, subject, errMsg)
 			}
 		} else {
 			mailType = "success"
-			err = SendSuccessEmail(from)
+			err = s.SendSuccessEmail(from)
 		}
 		if err != nil {
 			logError(r, err, "unable to send response email: "+mailType)
@@ -250,7 +304,7 @@ func parseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := getOrCreateUserID(from)
+	userID, err := getOrCreateUserID(s.DB, from)
 	if err != nil {
 		logError(r, err, "unable to create/get user")
 		errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to create and/or get user")
@@ -284,7 +338,7 @@ func parseHandler(w http.ResponseWriter, r *http.Request) {
 				exercise = "unknown"
 			}
 			// TODO: move out of loop and use VALUES (), (), (), () and move to db.go
-			_, err = DB.Exec("INSERT INTO reps (exercise, count, user_id) VALUES (?, ?, ?)", exercise, count, userID)
+			_, err = s.DB.Exec("INSERT INTO reps (exercise, count, user_id) VALUES (?, ?, ?)", exercise, count, userID)
 			if err != nil {
 				logError(r, err, "unable to insert rep")
 				errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to insert into the database")
@@ -294,7 +348,7 @@ func parseHandler(w http.ResponseWriter, r *http.Request) {
 	} else if inListCaseInsenitive(subject, Offices) {
 		office := formattedOffice(subject)
 		// todo: move to db.go
-		_, err = DB.Exec("UPDATE user SET office=(SELECT id FROM office where name=?) WHERE id=? LIMIT 1", office, userID)
+		_, err = s.DB.Exec("UPDATE user SET office=(SELECT id FROM office where name=?) WHERE id=? LIMIT 1", office, userID)
 		if err != nil {
 			logError(r, err, "unable to update user's office")
 			errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to update office relationship in the database")
@@ -334,8 +388,8 @@ type Stats struct {
 	OfficeSize                       int
 }
 
-// viewHandler handles /view (all the graphs, data, etc)
-func viewHandler(w http.ResponseWriter, r *http.Request) {
+// ViewHandler handles /view (all the graphs, data, etc)
+func (s *Server) ViewHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.URL.Query().Get("email")
 	if email == "" {
 		errorHandler(w, r, http.StatusBadRequest, "you must provide an email query parameter", nil)
@@ -343,11 +397,11 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	data := ViewData{
 		UserEmail:   email,
-		TodaysReps:  getTodaysReps(email),
-		UserOffice:  getUserOffice(email),
-		OfficeReps:  getOfficeReps(),
-		OfficeStats: getOfficeStats(),
-		UserReps:    getUserReps(email),
+		TodaysReps:  getTodaysReps(s.DB, email),
+		UserOffice:  getUserOffice(s.DB, email),
+		OfficeReps:  getOfficeReps(s.DB),
+		OfficeStats: getOfficeStats(s.DB),
+		UserReps:    getUserReps(s.DB, email),
 	}
 
 	err := ViewTemplate.Execute(w, data)
@@ -357,7 +411,8 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func jsonHandler(w http.ResponseWriter, r *http.Request) {
+// JSONHandler displays the JSON payload needed to build a client based js page
+func (s *Server) JSONHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.URL.Query().Get("email")
 	if email == "" {
 		errorHandler(w, r, http.StatusBadRequest, "you must provide an email query parameter", nil)
@@ -365,11 +420,11 @@ func jsonHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	data := ViewData{
 		UserEmail:   email,
-		TodaysReps:  getTodaysReps(email),
-		UserOffice:  getUserOffice(email),
-		OfficeReps:  getOfficeReps(),
-		OfficeStats: getOfficeStats(),
-		UserReps:    getUserReps(email),
+		TodaysReps:  getTodaysReps(s.DB, email),
+		UserOffice:  getUserOffice(s.DB, email),
+		OfficeReps:  getOfficeReps(s.DB),
+		OfficeStats: getOfficeStats(s.DB),
+		UserReps:    getUserReps(s.DB, email),
 	}
 	w.Header().Set("content-type", "application/json")
 	err := json.NewEncoder(w).Encode(data)
@@ -378,9 +433,9 @@ func jsonHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// heathcheckHandler verifies dependencies and reports if they are not in a good state
-func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := DB.Exec("SELECT 1")
+// HeathcheckHandler verifies dependencies and reports if they are not in a good state
+func (s *Server) HealthcheckHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := s.DB.Exec("SELECT 1")
 	if err != nil {
 		logError(r, err, "healthcheck failed to query db")
 		w.Write([]byte("database issues\n"))
@@ -390,8 +445,8 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// indexHandler handles the root/index
-func indexHandler(w http.ResponseWriter, r *http.Request) {
+// IndexHandler handles the root/index
+func (s *Server) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	err := IndexTemplate.Execute(w, nil)
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, fmt.Sprintf("unable to execute %s template", "index.html"), err)

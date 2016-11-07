@@ -72,7 +72,7 @@ func (SendGridEmailer) SendEmail(to string, subject string, msg string) error {
 }
 
 // SendErrorEmail sets up the error message and then calls sendEmail
-func SendErrorEmail(rcpt string, originalAddressTo string, subject string, msg string) error {
+func (s *Server) SendErrorEmail(rcpt string, originalAddressTo string, subject string, msg string) error {
 	officeList := strings.Join(Offices, ", ")
 	msgFmt := `
 	<h3>Uh oh!</h3>
@@ -95,9 +95,9 @@ func SendErrorEmail(rcpt string, originalAddressTo string, subject string, msg s
 }
 
 // SendSuccessEmail sets up the success message and calls sendEmail
-func SendSuccessEmail(to string) error {
-	office := getUserOffice(to)
-	officeStats := getOfficeStats()
+func (s *Server) SendSuccessEmail(to string) error {
+	office := getUserOffice(s.DB, to)
+	officeStats := getOfficeStats(s.DB)
 	var officeMsg string
 	var forTheTeam string
 	if office == "" || office == "Unknown" {
@@ -107,7 +107,7 @@ func SendSuccessEmail(to string) error {
 		officeMsg = officeComparisonUpdate(office, officeStats)
 		forTheTeam = fmt.Sprintf(" for the %s team", office)
 	}
-	total := totalReps(getUserReps(to))
+	total := totalReps(getUserReps(s.DB, to))
 	days := int(time.Since(StartDate).Hours() / float64(24))
 	if days == 0 {
 		days = 1 // avoid divide by zero
