@@ -16,8 +16,6 @@ import (
 // Port can be overridden with flags
 var Port int
 
-
-
 func TestMain(m *testing.M) {
 	// flag vars
 	var mysqlHost, mysqlPort, mysqlUser, mysqlPass, mysqlDBname string
@@ -40,7 +38,7 @@ func TestMain(m *testing.M) {
 	flag.StringVar(&mysqlDBname, "mysql-dbname", "countmyreps_test", "mysql dbname")
 	flag.BoolVar(&overwriteDB, "overwrite-database", false, "allow overwriting database")
 	flag.BoolVar(&noTearDown, "no-tear-down", false, "set to keep the data after the test run")
-	flag.BoolVar(&Debug, "verbose", false "Set flag to show debug logs")
+	flag.BoolVar(&Debug, "verbose", false, "Set flag to show debug logs")
 
 	flagenv.Parse()
 	flag.Parse()

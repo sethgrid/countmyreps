@@ -148,6 +148,86 @@ func getUserOffice(db *sql.DB, email string) string {
 	return officeName
 }
 
+func getUserTeams(db *sql.DB, email string) []string {
+	var teams []string
+	q := "SELECT team.name FROM team WHERE team.id in (SELECT user_team.team_id FROM user_team JOIN user ON user_team.user_id=user.id WHERE user.email=?);"
+	rows, err := db.Query(q, email)
+	if err != nil {
+		logError(nil, errors.Wrap(err, queryPrinter(q, email)), "unable to query for user teams")
+		return teams
+	}
+	for rows.Next() {
+		var name string
+		err := rows.Scan(&name)
+		if err != nil {
+			logError(nil, errors.Wrap(err, queryPrinter(q, email)), "unable to scan query for user teams")
+			return teams
+		}
+		teams = append(teams, name)
+	}
+	return teams
+}
+
+func getTeamStats(db *sql.DB) map[string]Stats {
+	teamStats := make(map[string]Stats)
+	teams := getTeams(db)
+	for _, team := range teams {
+		teamName := team.name
+		teamID := team.id
+		var participating int // does not make sense for teams really; you are registered for the team otherwise you would not get a stat for it
+		var headCount int
+		var totalReps sql.NullInt64
+
+		qHeadCount := "SELECT count(*) FROM user_team WHERE user_team.team_id=?"
+		row := db.QueryRow(qHeadCount, teamID)
+		err := row.Scan(&headCount)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				continue
+			}
+			logError(nil, errors.Wrap(err, queryPrinter(qHeadCount, teamName)), "unable to scan for team head count")
+		}
+
+		// TODO: is there a better way to measure team participation, or does that not make sense? Works for offices, not so much teams.
+		participating = headCount
+
+		qTotals := "select sum(reps.count) from reps where reps.created_at > ? and reps.created_at < ? and reps.user_id in (SELECT DISTINCT user_id FROM user_team WHERE team_id=?)"
+		row = db.QueryRow(qTotals, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"), teamID)
+		err = row.Scan(&totalReps)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				continue
+			}
+			logError(nil, errors.Wrap(err, queryPrinter(qTotals, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"), teamID)), "unable to scan for office totals")
+			return teamStats
+		}
+
+		totalDays := int(EndDate.Sub(StartDate).Hours() / float64(24))
+		if totalDays <= 0 {
+			totalDays = 1 // avoid divide by zero
+		}
+
+		if headCount == 0 {
+			headCount = 1 // avoid divide by zero
+		}
+		stats := Stats{}
+		stats.HeadCount = headCount
+		stats.TotalReps = int(totalReps.Int64)
+		stats.PercentParticipating = participating * 100 / headCount
+		stats.RepsPerPerson = int(totalReps.Int64) / headCount
+
+		if participating == 0 {
+			participating = 1 // avoid divide by zero
+		}
+		stats.RepsPerPersonParticipating = int(totalReps.Int64) / participating
+		stats.RepsPerPersonParticipatingPerDay = int(totalReps.Int64) / participating / totalDays
+		stats.RepsPerPersonPerDay = int(totalReps.Int64) / headCount / totalDays
+
+		teamStats[teamName] = stats
+	}
+	return teamStats
+}
+
 func getOfficeStats(db *sql.DB) map[string]Stats {
 	officeStats := make(map[string]Stats)
 	for _, officeName := range Offices {
@@ -196,7 +276,7 @@ func getOfficeStats(db *sql.DB) map[string]Stats {
 			headCount = 1 // avoid divide by zero
 		}
 		stats := Stats{}
-		stats.OfficeSize = headCount
+		stats.HeadCount = headCount
 		stats.TotalReps = int(totalReps.Int64)
 		stats.PercentParticipating = participating * 100 / headCount
 		stats.RepsPerPerson = int(totalReps.Int64) / headCount
@@ -213,7 +293,77 @@ func getOfficeStats(db *sql.DB) map[string]Stats {
 	return officeStats
 }
 
+// Team represents the db reference to a given team to which a user can have many
+type Team struct {
+	id   int
+	name string
+}
+
+func getTeams(db *sql.DB) []Team {
+	var teams []Team
+	q := "SELECT id, name FROM team"
+	rows, err := db.Query(q)
+	if err != nil {
+		logError(nil, errors.Wrap(err, queryPrinter(q)), "unable to query teams")
+		return teams
+	}
+	for rows.Next() {
+		var name string
+		var id int
+		err := rows.Scan(&id, &name)
+		if err != nil {
+			logError(nil, errors.Wrap(err, queryPrinter(q)), "unable to scan teams")
+		}
+		teams = append(teams, Team{id: id, name: name})
+	}
+	if rows.Err() != nil {
+		logError(nil, errors.Wrap(err, queryPrinter(q)), "post scan error for teams")
+	}
+	return teams
+}
+
+func getTeamReps(db *sql.DB) map[string][]RepData {
+	trd := make(map[string][]RepData)
+	teams := getTeams(db)
+	// TODO: DRY up with getOfficeReps
+	for _, team := range teams {
+		q := "SELECT reps.exercise, reps.count, reps.created_at FROM reps JOIN user on reps.user_id=user.id WHERE user.id in (SELECT DISTINCT user_id FROM user_team WHERE user_team.team_id=?) AND reps.created_at > ? AND reps.created_at < ?"
+		rows, err := db.Query(q, team.id, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))
+		if err != nil {
+			logError(nil, errors.Wrap(err, queryPrinter(q, team.id, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to query for user's reps")
+			return nil
+		}
+		repDatas := initRepData()
+		for rows.Next() {
+			var exercise string
+			var count int
+			var createdAt time.Time
+			err = rows.Scan(&exercise, &count, &createdAt)
+			if err != nil {
+				logError(nil, errors.Wrap(err, queryPrinter(q, team.id, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to scan results for user's reps")
+				return nil
+			}
+			for _, rd := range repDatas {
+				// find which repData slot we need to populate. Probably more effecient way to do this. Probably a fancy mysql query could have done all this for me.
+				if rd.Date != fmt.Sprintf("%d-%d", int(createdAt.Month()), createdAt.Day()) {
+					continue
+				}
+				rd.ExerciseCounts[exercise] += count
+			}
+		}
+		if rows.Err() != nil {
+			logError(nil, rows.Err(), "error after parsing data for user reps")
+		}
+		trd[team.name] = repDatas
+	}
+	return trd
+}
+
 func getOfficeReps(db *sql.DB) map[string][]RepData {
+	// DEBUG
+	_ = getTeamReps(db)
+	// END DEBUG
+
 	officeReps := make(map[string][]RepData)
 	// TODO: DRY it up getUserReps
 	for _, officeName := range Offices {

@@ -33,6 +33,11 @@ func setup() *Server {
 		time.Sleep(1 * time.Millisecond)
 	}
 
+	err := populateOfficesVar(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return s
 }
 
@@ -90,6 +95,49 @@ func TestJsonEndpoint(t *testing.T) {
 	if got, want := vd.UserEmail, "oc_1@sendgrid.com"; got != want {
 		t.Errorf("got %s, want %s for email", got, want)
 	}
+}
+
+func TestViewEndpoint(t *testing.T) {
+	srv := setup()
+	defer teardown(srv)
+
+	// oc_1@sendgrid.com is a known user from integration.Seed()
+	resp, err := getResponse(srv.Port, "/view?email=oc_1@sendgrid.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Resp Body:\n%s", resp.body)
+
+	if got, want := resp.code, http.StatusOK; got != want {
+		t.Errorf("got %d, want %d for status code", got, want)
+	}
+
+	for _, want := range []string{
+		// user email should be on the page
+		`oc_1@sendgrid.com`,
+		// user teams should be on the page
+		`eng`,
+		`crossfit`,
+		`mp`,
+		// offices should be on the page
+		`OC`,
+		`Denver`,
+	} {
+		if !bytes.Contains(resp.body, []byte(want)) {
+			t.Errorf("did not find in body:\n%s", want)
+		}
+	}
+
+	for _, notWant := range []string{
+		`unable to execute`,
+		`Internal Server Error`,
+		`view.html`,
+	} {
+		if bytes.Contains(resp.body, []byte(notWant)) {
+			t.Errorf("found (and don't want) in body:\n%s", notWant)
+		}
+	}
+
 }
 
 func TestIndex(t *testing.T) {

@@ -40,7 +40,7 @@ var Offices []string
 var AppName = "countmyreps"
 
 // Version is the semver
-var Version = "2.3.6"
+var Version = "3.0.0"
 
 func init() {
 	var err error
@@ -364,12 +364,13 @@ func (s *Server) ParseHandler(w http.ResponseWriter, r *http.Request) {
 
 // ViewData is the data needed to populate the view.html template
 type ViewData struct {
-	UserEmail   string
-	UserOffice  string
-	TodaysReps  []RepData
-	UserReps    []RepData
-	OfficeReps  map[string][]RepData
-	OfficeStats map[string]Stats
+	UserEmail  string
+	UserOffice string
+	UserTeams  []string
+	TodaysReps []RepData
+	UserReps   []RepData
+	TeamReps   map[string][]RepData
+	TeamStats  map[string]Stats
 }
 
 // RepData is a single entry (or aggregate for a day)
@@ -386,7 +387,7 @@ type Stats struct {
 	RepsPerPersonParticipatingPerDay int
 	PercentParticipating             int
 	TotalReps                        int
-	OfficeSize                       int
+	HeadCount                        int
 }
 
 // ViewHandler handles /view (all the graphs, data, etc)
@@ -396,14 +397,8 @@ func (s *Server) ViewHandler(w http.ResponseWriter, r *http.Request) {
 		errorHandler(w, r, http.StatusBadRequest, "you must provide an email query parameter", nil)
 		return
 	}
-	data := ViewData{
-		UserEmail:   email,
-		TodaysReps:  getTodaysReps(s.DB, email),
-		UserOffice:  getUserOffice(s.DB, email),
-		OfficeReps:  getOfficeReps(s.DB),
-		OfficeStats: getOfficeStats(s.DB),
-		UserReps:    getUserReps(s.DB, email),
-	}
+
+	data := s.getViewData(email)
 
 	err := ViewTemplate.Execute(w, data)
 	if err != nil {
@@ -419,19 +414,37 @@ func (s *Server) JSONHandler(w http.ResponseWriter, r *http.Request) {
 		errorHandler(w, r, http.StatusBadRequest, "you must provide an email query parameter", nil)
 		return
 	}
-	data := ViewData{
-		UserEmail:   email,
-		TodaysReps:  getTodaysReps(s.DB, email),
-		UserOffice:  getUserOffice(s.DB, email),
-		OfficeReps:  getOfficeReps(s.DB),
-		OfficeStats: getOfficeStats(s.DB),
-		UserReps:    getUserReps(s.DB, email),
-	}
+
+	data := s.getViewData(email)
+
 	w.Header().Set("content-type", "application/json")
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		errorHandler(w, r, http.StatusInternalServerError, "unable to encode json", err)
 	}
+}
+
+func (s *Server) getViewData(email string) ViewData {
+	// TODO: clean up this hack by migrating user offices to user be one of their teams
+	officeAndTeamReps := getTeamReps(s.DB)
+	for k, v := range getOfficeReps(s.DB) {
+		officeAndTeamReps[k] = v
+	}
+	officeAndTeamStats := getTeamStats(s.DB)
+	for k, v := range getOfficeStats(s.DB) {
+		officeAndTeamStats[k] = v
+	}
+
+	data := ViewData{
+		UserEmail:  email,
+		TodaysReps: getTodaysReps(s.DB, email),
+		UserOffice: getUserOffice(s.DB, email),
+		UserTeams:  getUserTeams(s.DB, email),
+		TeamReps:   officeAndTeamReps,
+		TeamStats:  officeAndTeamStats,
+		UserReps:   getUserReps(s.DB, email),
+	}
+	return data
 }
 
 // HeathcheckHandler verifies dependencies and reports if they are not in a good state

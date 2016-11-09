@@ -150,6 +150,25 @@ func Seed(db *sql.DB, monthStart string, monthEnd string, today string) error {
 		users = append(users, User{id: id, email: user})
 	}
 
+	// set up teams
+	debugln("inserting teams")
+	teams := []string{"eng", "sales", "mp", "crossfit"}
+	for _, team := range teams {
+		_, err := db.Exec("INSERT INTO team (name) VALUES (?)", team)
+		if err != nil {
+			return err
+		}
+	}
+
+	// set up user to team relationships
+	debugln("relating users to teams")
+	// set oc_1 and oc_2 to eng, mp, crossfit. set oc_2 to sales.
+	// we could do fancy queries and inserts here, but this is straight forward enough
+	_, err = db.Exec("INSERT INTO user_team (user_id, team_id) VALUES (1,1),(1,3),(1,4),(2,1),(2,3),(2,4),(3,2)")
+	if err != nil {
+		return err
+	}
+
 	// create reps
 	debugln("inserting rep data")
 	var randSeed int64 = 655321 // always get the same test data

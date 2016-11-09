@@ -82,7 +82,7 @@ func fakeStats() map[string]Stats {
 	stats := make(map[string]Stats)
 
 	RWCStats := Stats{}
-	RWCStats.OfficeSize = 100
+	RWCStats.HeadCount = 100
 	RWCStats.PercentParticipating = 33
 	RWCStats.RepsPerPerson = 14
 	RWCStats.RepsPerPersonParticipating = 45
@@ -92,7 +92,7 @@ func fakeStats() map[string]Stats {
 	stats["RWC"] = RWCStats
 
 	OCStats := Stats{}
-	OCStats.OfficeSize = 200
+	OCStats.HeadCount = 200
 	OCStats.PercentParticipating = 10
 	OCStats.RepsPerPerson = 3
 	OCStats.RepsPerPersonParticipating = 30
@@ -102,7 +102,7 @@ func fakeStats() map[string]Stats {
 	stats["OC"] = OCStats
 
 	DenverStats := Stats{}
-	DenverStats.OfficeSize = 300
+	DenverStats.HeadCount = 300
 	DenverStats.PercentParticipating = 5
 	DenverStats.RepsPerPerson = 33
 	DenverStats.RepsPerPersonParticipating = 75

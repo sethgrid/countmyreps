@@ -87,7 +87,7 @@ TODO - link to github
     <div class="inner">
 
     <a href="#user">My Results</a> |
-    {{ range $index, $element := .OfficeStats }}
+    {{ range $index, $element := .TeamStats }}
     <a href="#{{ $index }}">{{ $index }} (total: {{ .TotalReps }})</a> |
     {{ end }}
     <a href="/json?email={{ .UserEmail }}";?>JSON</a><br><br>
@@ -115,7 +115,7 @@ TODO - link to github
             <div id='dashboard_user'></div>
         </td>
     </tr>
-    {{ range $index, $element := .OfficeStats }}
+    {{ range $index, $element := .TeamStats }}
     <tr>
         <td class="cell">
             <a name="{{ $index }}"></a>
@@ -355,12 +355,12 @@ var freqDataUser=[
 ];
 dashboard('#dashboard_user',"Your Total: {{ totals .UserReps }}",freqDataUser);
 
-{{ $officeReps := .OfficeReps}}
-{{ range $officeName, $ignore := .OfficeStats }}
-    var freqData{{ js $officeName }}=[
-        {{ d3ChartDataForOffice $officeName $officeReps }}
+{{ $teamReps := .TeamReps}}
+{{ range $teamName, $ignore := .TeamStats }}
+    var freqData{{ js $teamName }}=[
+        {{ d3ChartDataForOffice $teamName $teamReps }}
     ];
-    dashboard('#dashboard_{{ js $officeName }}',"{{ $officeName }} Total: {{ .TotalReps }}",freqData{{ js $officeName }});
+    dashboard('#dashboard_{{ js $teamName }}',"{{ $teamName }} Total: {{ .TotalReps }}",freqData{{ js $teamName }});
 
 {{ end }}
 
