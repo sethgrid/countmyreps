@@ -39,7 +39,7 @@ var Offices []string
 var AppName = "countmyreps"
 
 // Version is the semver
-var Version = "3.1.2"
+var Version = "3.1.3"
 
 func init() {
 	var err error
@@ -62,8 +62,8 @@ func init() {
 				parts[i] = fmt.Sprintf("{State:'%s',freq:{pull_up:%d, sit_up:%d, push_up: %d, squat:%d}}",
 					data.Date,
 					data.ExerciseCounts[PullUps],
-					data.ExerciseCounts[PushUps],
 					data.ExerciseCounts[SitUps],
+					data.ExerciseCounts[PushUps],
 					data.ExerciseCounts[Squats],
 				)
 			}
