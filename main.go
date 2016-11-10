@@ -8,13 +8,12 @@ import (
 	"html/template"
 	"log"
 	"math/rand"
+	"net"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
-
-	"net"
 
 	"github.com/facebookgo/flagenv"
 	_ "github.com/go-sql-driver/mysql"
@@ -40,7 +39,7 @@ var Offices []string
 var AppName = "countmyreps"
 
 // Version is the semver
-var Version = "3.0.0"
+var Version = "3.1.0"
 
 func init() {
 	var err error
@@ -347,12 +346,39 @@ func (s *Server) ParseHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else if inListCaseInsenitive(subject, Offices) {
+		// TODO: remove offices; just use teams
 		office := formattedOffice(subject)
 		// todo: move to db.go
 		_, err = s.DB.Exec("UPDATE user SET office=(SELECT id FROM office where name=?) WHERE id=? LIMIT 1", office, userID)
 		if err != nil {
 			logError(r, err, "unable to update user's office")
 			errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to update office relationship in the database")
+			return
+		}
+	} else if strings.Contains(strings.ToLower(subject), "team add:") {
+		parts := strings.Split(subject, ":")
+		if len(parts) < 2 {
+			logError(r, err, "enexpected error splitting subject for team add")
+			errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to add to user teams")
+			return
+		}
+		err = addTeam(s.DB, parts[1], userID)
+		if err != nil {
+			logError(r, err, "unable to add to user teams")
+			errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to add to user teams")
+			return
+		}
+	} else if strings.Contains(strings.ToLower(subject), "team remove:") {
+		parts := strings.Split(subject, ":")
+		if len(parts) < 2 {
+			logError(r, err, "enexpected error splitting subject for team remove")
+			errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to add to user teams")
+			return
+		}
+		err = removeTeam(s.DB, parts[1], userID)
+		if err != nil {
+			logError(r, err, "unable to remove from user teams")
+			errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to remove from user teams")
 			return
 		}
 	} else {

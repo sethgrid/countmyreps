@@ -98,7 +98,20 @@ TODO - link to github
             {{ if .UserOffice }}
                 <h4>{{ .UserEmail }} - {{ .UserOffice }}</h3>
             {{ else }}
-                <h4>You are not associated with an office!</h4>
+                <h4>You are not associated with an office! Send an email with your office in the subject.</h4>
+            {{ end }}
+            {{ if .UserTeams }}
+                Your teams:<br />
+                <ul>
+                {{ range .UserTeams }}
+               <li>{{ . }}</li>
+                {{ end }}
+                </ul>
+                To remove yourself from a team, send an email with "Team Remove: team-name".<br />
+                To add yourself to another team, send an email with "Team Add: team-name".<br /><br />
+            {{ else }}
+                You are not associated with any teams!<br />
+                Send an email with "Team Add: team-name" to add yourself to a team. You can be on multiple teams!<br /><br />
             {{ end }}
             <b>Your Total</b>: {{ totals .UserReps }}<br />
             {{ if .TodaysReps }}

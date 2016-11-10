@@ -119,6 +119,19 @@ func (s *Server) SendSuccessEmail(to string) error {
 		data = append(data, fmt.Sprintf("%s: %d", officeName, stats.TotalReps))
 	}
 
+	var teamsMsg string
+	teams := getUserTeams(s.DB, to)
+	if len(teams) == 0 {
+		teamsMsg = "You are not with any teams yet! Send an email with the subject 'Team Add: team-name' to get on a team. You can be on multiple teams!"
+	} else {
+		teamsMsg = "You are on the following teams. You can send an email with the subject 'Team Remove: team-name' to get off them, or `Team Add: team-name' to join others."
+		var teamList string
+		for _, team := range teams {
+			teamList += fmt.Sprintf("<li>%s</li>", team)
+		}
+		teamsMsg = fmt.Sprintf("%s<ul>%s</ul>", teamsMsg, teamList)
+	}
+
 	officeTotals := "The office totals are: " + strings.Join(data, ", ")
 
 	msg := fmt.Sprintf(`<h3>Keep it up!</h3>
@@ -126,14 +139,14 @@ func (s *Server) SendSuccessEmail(to string) error {
 	You've logged a total of %d%s, an average of %d per day.
 	</p>
 	<p>
-	--OFFICE_MESSAGE--
+	%s
 	</p>
 	<p>
 	%s
-	</p>`, total, forTheTeam, avg, officeTotals)
-
-	// we have to handle this separately because officeMsg contains a literal percent sign and we can't compose it with sprintf.
-	msg = strings.Replace(msg, "--OFFICE_MESSAGE--", officeMsg, 1)
+	</p>
+	<p>
+	%s
+	</p>`, total, forTheTeam, avg, officeMsg, teamsMsg, officeTotals)
 
 	return EmailSender.SendEmail(to, "Success!", msg)
 }

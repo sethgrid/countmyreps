@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -95,6 +97,82 @@ func TestJsonEndpoint(t *testing.T) {
 	if got, want := vd.UserEmail, "oc_1@sendgrid.com"; got != want {
 		t.Errorf("got %s, want %s for email", got, want)
 	}
+}
+
+func parseAPIRecv(port int, subject string, from string) error {
+	resp, err := http.PostForm(fmt.Sprintf("http://127.0.0.1:%d/parseapi/index.php", port), url.Values{"subject": {subject}, "from": {from}, "to": {"pullups-pushups-squats-situps@countmyreps.com"}})
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	io.Copy(ioutil.Discard, resp.Body)
+	return nil
+}
+
+func TestAddRemoveTeam(t *testing.T) {
+	srv := setup()
+	defer teardown(srv)
+
+	err := parseAPIRecv(srv.Port, "Team Add: my-team", "oc_3@sendgrid.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// oc_1@sendgrid.com is a known user from integration.Seed()
+	resp, err := getResponse(srv.Port, "/json?email=oc_3@sendgrid.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Resp Body:\n%s", resp.body)
+
+	if got, want := resp.code, http.StatusOK; got != want {
+		t.Errorf("got %d, want %d for status code", got, want)
+	}
+
+	vd := ViewData{}
+	err = json.Unmarshal(resp.body, &vd)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !contains("my-team", vd.UserTeams) {
+		t.Errorf("got %v, want %s in list", vd.UserTeams, "my-team")
+	}
+
+	err = parseAPIRecv(srv.Port, "Team Remove: my-team", "oc_3@sendgrid.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// oc_1@sendgrid.com is a known user from integration.Seed()
+	resp, err = getResponse(srv.Port, "/json?email=oc_3@sendgrid.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Resp Body:\n%s", resp.body)
+
+	if got, want := resp.code, http.StatusOK; got != want {
+		t.Errorf("got %d, want %d for status code", got, want)
+	}
+
+	vd = ViewData{}
+	err = json.Unmarshal(resp.body, &vd)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if contains("my-team", vd.UserTeams) {
+		t.Errorf("got %v, don't want %s in list", vd.UserTeams, "my-team")
+	}
+}
+
+func contains(needle string, haystack []string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+	return false
 }
 
 func TestViewEndpoint(t *testing.T) {

@@ -25,6 +25,8 @@ func populateOfficesVar(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var office string
 		err = rows.Scan(&office)
@@ -114,6 +116,8 @@ func getTodaysReps(db *sql.DB, email string) []RepData {
 		logError(nil, errors.Wrap(err, queryPrinter(q, email, fmt.Sprintf("%d-%d-%d", time.Now().Year(), int(time.Now().Month()), time.Now().Day()))), "unable to get today's reps")
 		return rd
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var exercise string
 		var count int
@@ -127,6 +131,9 @@ func getTodaysReps(db *sql.DB, email string) []RepData {
 			Date:           createdAt.Add(timezoneShift(office)).Format(time.Kitchen),
 			ExerciseCounts: map[string]int{exercise: count},
 		})
+	}
+	if rows.Err() != nil {
+		logError(nil, err, "error after rows.Next in getTodaysReps")
 	}
 	// reverse the data for presentation needs
 	for i, j := 0, len(rd)-1; i < j; i, j = i+1, j-1 {
@@ -156,6 +163,8 @@ func getUserTeams(db *sql.DB, email string) []string {
 		logError(nil, errors.Wrap(err, queryPrinter(q, email)), "unable to query for user teams")
 		return teams
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var name string
 		err := rows.Scan(&name)
@@ -165,7 +174,104 @@ func getUserTeams(db *sql.DB, email string) []string {
 		}
 		teams = append(teams, name)
 	}
+	if rows.Err() != nil {
+		logError(nil, err, "error after rows.Next in getUserTeams")
+	}
+
 	return teams
+}
+
+func getTeamID(db *sql.DB, teamName string, createIfMissing bool) (int, error) {
+	var id int
+	teamName = strings.TrimSpace(teamName)
+	q := "SELECT id FROM team WHERE name=? LIMIT 1"
+	rows, err := db.Query(q, teamName)
+	if err != nil {
+		return 0, errors.Wrapf(err, "unable to scan team id for %q", teamName)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rows.Scan(&id)
+		if err != nil {
+			continue
+		}
+
+		return id, nil
+	}
+	if rows.Err() != nil {
+		logError(nil, err, "error after rows.Next in getTeamID")
+	}
+
+	if id == 0 && createIfMissing {
+		res, err := db.Exec("INSERT INTO team SET name=?", teamName)
+		if err != nil {
+			return 0, errors.Wrapf(err, "unable to insert team id for %q", teamName)
+		}
+		resID, err := res.LastInsertId()
+		if err != nil {
+			return 0, errors.Wrapf(err, "unable to get insert team id for %q", teamName)
+		}
+		id = int(resID)
+		return id, nil
+	}
+	return 0, sql.ErrNoRows
+}
+
+func addTeam(db *sql.DB, teamName string, userID int) error {
+	teamName = strings.TrimSpace(teamName)
+	teamID, err := getTeamID(db, teamName, true)
+	if err != nil {
+		return err
+	}
+
+	if isOnTeam(db, teamName, userID) {
+		return nil
+	}
+
+	q := "INSERT INTO user_team (user_id, team_id) VALUES (?,?)"
+	_, err = db.Exec(q, userID, teamID)
+	if err != nil {
+		return errors.Wrap(err, queryPrinter(q, userID, teamID))
+	}
+
+	return nil
+}
+
+func isOnTeam(db *sql.DB, teamName string, userID int) bool {
+	q := "SELECT count(*) FROM user_team WHERE user_team.team_id=(SELECT id FROM team WHERE name=?) AND user_team.user_id=?"
+	rows, err := db.Query(q, teamName, userID)
+	if err != nil {
+		logError(nil, errors.Wrap(err, queryPrinter(q, teamName, userID)), "unable to check for team membership")
+		return false
+	}
+	defer rows.Close()
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			logError(nil, err, "unable to scan count for isOnTeam")
+		}
+	}
+	if rows.Err() != nil {
+		logError(nil, err, "error after rows.Next in isOnTeam")
+	}
+	return count > 0
+}
+
+func removeTeam(db *sql.DB, teamName string, userID int) error {
+	teamName = strings.TrimSpace(teamName)
+	teamID, err := getTeamID(db, teamName, false)
+	if err != nil {
+		return err
+	}
+	q := "DELETE FROM user_team WHERE user_id=? AND team_id=?"
+	_, err = db.Exec(q, userID, teamID)
+	if err != nil {
+		return errors.Wrap(err, queryPrinter(q, userID, teamID))
+	}
+
+	return nil
 }
 
 func getTeamStats(db *sql.DB) map[string]Stats {
@@ -307,6 +413,8 @@ func getTeams(db *sql.DB) []Team {
 		logError(nil, errors.Wrap(err, queryPrinter(q)), "unable to query teams")
 		return teams
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var name string
 		var id int
@@ -333,6 +441,8 @@ func getTeamReps(db *sql.DB) map[string][]RepData {
 			logError(nil, errors.Wrap(err, queryPrinter(q, team.id, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to query for user's reps")
 			return nil
 		}
+		defer rows.Close()
+
 		repDatas := initRepData()
 		for rows.Next() {
 			var exercise string
@@ -373,6 +483,8 @@ func getOfficeReps(db *sql.DB) map[string][]RepData {
 			logError(nil, errors.Wrap(err, queryPrinter(q, officeName, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to query for user's reps")
 			return nil
 		}
+		defer rows.Close()
+
 		repDatas := initRepData()
 		for rows.Next() {
 			var exercise string
@@ -406,6 +518,8 @@ func getUserReps(db *sql.DB, email string) []RepData {
 		logError(nil, errors.Wrap(err, queryPrinter(q, email, StartDate.Format("2006-01-02"), EndDate.Format("2006-01-02"))), "unable to query for user's reps")
 		return nil
 	}
+	defer rows.Close()
+
 	repDatas := initRepData()
 	for rows.Next() {
 		var exercise string
