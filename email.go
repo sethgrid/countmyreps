@@ -82,7 +82,7 @@ func (s *Server) SendErrorEmail(rcpt string, originalAddressTo string, subject s
     Make sure that your subject line was FOUR comma separated numbers, like: 5, 10, 15, 20<br />
     If you were trying to set your office location, make sure you choose one from:<br />
 	%s<br />
-	(This should be sent in its own email).
+	(This should be sent in its own email). The same for if you are removing or adding a team. Use 'Team Add: team-name' or 'Team Remove: team-name'.
     </p>
 	<p>
     Details from received message:<br />

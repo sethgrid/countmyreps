@@ -39,7 +39,7 @@ var Offices []string
 var AppName = "countmyreps"
 
 // Version is the semver
-var Version = "3.1.0"
+var Version = "3.1.1"
 
 func init() {
 	var err error
