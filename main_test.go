@@ -78,6 +78,26 @@ func TestOfficeComparisonUpdateNotLeading(t *testing.T) {
 	}
 }
 
+func TestSanitizeTeamName(t *testing.T) {
+	tests := []struct {
+		in  string
+		out string
+	}{
+		{"Eng", "Eng"},
+		{"Sales1", "Sales1"},
+		{"Big_Data", "Big_Data"},
+		{" Engineering  ", "Engineering"},
+		{"Big-Data", "BigData"},
+		{"Big Data", "BigData"},
+		{"<script type='javascript'>", "scripttypejavascript"},
+	}
+	for _, test := range tests {
+		if got, want := sanitizeTeamName(test.in), test.out; got != want {
+			t.Errorf("got %s, want %s for %s", got, want, test.in)
+		}
+	}
+}
+
 func fakeStats() map[string]Stats {
 	stats := make(map[string]Stats)
 

@@ -39,7 +39,7 @@ var Offices []string
 var AppName = "countmyreps"
 
 // Version is the semver
-var Version = "3.1.1"
+var Version = "3.1.2"
 
 func init() {
 	var err error
@@ -362,7 +362,7 @@ func (s *Server) ParseHandler(w http.ResponseWriter, r *http.Request) {
 			errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to add to user teams")
 			return
 		}
-		err = addTeam(s.DB, parts[1], userID)
+		err = addTeam(s.DB, sanitizeTeamName(parts[1]), userID)
 		if err != nil {
 			logError(r, err, "unable to add to user teams")
 			errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to add to user teams")
@@ -375,7 +375,7 @@ func (s *Server) ParseHandler(w http.ResponseWriter, r *http.Request) {
 			errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to add to user teams")
 			return
 		}
-		err = removeTeam(s.DB, parts[1], userID)
+		err = removeTeam(s.DB, sanitizeTeamName(parts[1]), userID)
 		if err != nil {
 			logError(r, err, "unable to remove from user teams")
 			errMsg = fmt.Sprintf(ErrUnexpectedFmt, "unable to remove from user teams")
@@ -386,6 +386,16 @@ func (s *Server) ParseHandler(w http.ResponseWriter, r *http.Request) {
 		errMsg = fmt.Sprintf(ErrSubjectFmt, subject)
 		return
 	}
+}
+
+func sanitizeTeamName(teamName string) string {
+	var rns []rune
+	for _, r := range teamName {
+		if strings.ContainsAny(string(r), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_") {
+			rns = append(rns, r)
+		}
+	}
+	return string(rns)
 }
 
 // ViewData is the data needed to populate the view.html template

@@ -113,7 +113,7 @@ func TestAddRemoveTeam(t *testing.T) {
 	srv := setup()
 	defer teardown(srv)
 
-	err := parseAPIRecv(srv.Port, "Team Add: my-team", "oc_3@sendgrid.com")
+	err := parseAPIRecv(srv.Port, "Team Add: my_team", "oc_3@sendgrid.com")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,11 +135,11 @@ func TestAddRemoveTeam(t *testing.T) {
 		t.Error(err)
 	}
 
-	if !contains("my-team", vd.UserTeams) {
-		t.Errorf("got %v, want %s in list", vd.UserTeams, "my-team")
+	if !contains("my_team", vd.UserTeams) {
+		t.Errorf("got %v, want %s in list", vd.UserTeams, "my_team")
 	}
 
-	err = parseAPIRecv(srv.Port, "Team Remove: my-team", "oc_3@sendgrid.com")
+	err = parseAPIRecv(srv.Port, "Team Remove: my_team", "oc_3@sendgrid.com")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,8 +161,8 @@ func TestAddRemoveTeam(t *testing.T) {
 		t.Error(err)
 	}
 
-	if contains("my-team", vd.UserTeams) {
-		t.Errorf("got %v, don't want %s in list", vd.UserTeams, "my-team")
+	if contains("my_team", vd.UserTeams) {
+		t.Errorf("got %v, don't want %s in list", vd.UserTeams, "my_team")
 	}
 }
 
