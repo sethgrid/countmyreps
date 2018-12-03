@@ -27,7 +27,7 @@ var ErrUnexpectedFmt = "CountMyReps experienced an unexpected error, please try 
 
 // Emailer interface allows us to send emails
 type Emailer interface {
-	SendEmail(to string, subject string, msg string) error
+	SendEmail(to string, subject string, msg string, replyMessageID string) error
 }
 
 // FakeEmailer is useful for testing
@@ -44,8 +44,8 @@ func (f FakeEmailer) SendEmail(to string, subject string, msg string) error {
 type SendGridEmailer struct{}
 
 // SendEmail sends an email through SendGrid
-func (SendGridEmailer) SendEmail(to string, subject string, msg string) error {
-	from := mail.NewEmail("CountMyReps", "automailer@countmyreps.com")
+func (SendGridEmailer) SendEmail(to string, subject string, msg string, replyMessageID string) error {
+	from := mail.NewEmail("CountMyReps", "automailer@countmyreps.partkyle.io")
 	// at this point, all recipients _should_ be firstname.lastname@sendgrid.com or firstname@sendgrid.com
 	toName := strings.Split(to, ".")[0]
 	if strings.Contains(toName, "@") {
@@ -53,10 +53,13 @@ func (SendGridEmailer) SendEmail(to string, subject string, msg string) error {
 	}
 	toAddr := mail.NewEmail(toName, to)
 
-	msg = `<img src="http://countmyreps.com/images/mustache-thin.jpg" style="margin:auto; width:300px; display:block"/>` + msg
+	msg = `<img src="https://countmyreps.partkyle.io/images/mustache-thin.jpg" style="margin:auto; width:300px; display:block"/>` + msg
 
 	content := mail.NewContent("text/html", msg)
 	m := mail.NewV3MailInit(from, subject, toAddr, content)
+	if replyMessageID != "" {
+		m.SetHeader("In-Reply-To", replyMessageID)
+	}
 
 	request := sendgrid.GetRequest(os.Getenv("SENDGRID_API_KEY"), "/v3/mail/send", "https://api.sendgrid.com")
 	request.Method = "POST"
@@ -72,7 +75,7 @@ func (SendGridEmailer) SendEmail(to string, subject string, msg string) error {
 }
 
 // SendErrorEmail sets up the error message and then calls sendEmail
-func (s *Server) SendErrorEmail(rcpt string, originalAddressTo string, subject string, msg string) error {
+func (s *Server) SendErrorEmail(rcpt string, originalAddressTo string, subject string, msg string, replyMessageID string) error {
 	officeList := strings.Join(Offices, ", ")
 	msgFmt := `
 	<h3>Uh oh!</h3>
@@ -91,11 +94,11 @@ func (s *Server) SendErrorEmail(rcpt string, originalAddressTo string, subject s
     Time: %s<br />
 	Error: %s<br />
 	</p>`
-	return EmailSender.SendEmail(rcpt, "Error with your submission", fmt.Sprintf(msgFmt, NewEmail, officeList, originalAddressTo, subject, time.Now().String(), msg))
+	return EmailSender.SendEmail(rcpt, subject, fmt.Sprintf(msgFmt, NewEmail, officeList, originalAddressTo, subject, time.Now().String(), msg), replyMessageID)
 }
 
 // SendSuccessEmail sets up the success message and calls sendEmail
-func (s *Server) SendSuccessEmail(to string) error {
+func (s *Server) SendSuccessEmail(to string, subject string, replyMessageID string) error {
 	office := getUserOffice(s.DB, to)
 	officeStats := getOfficeStats(s.DB)
 	var officeMsg string
@@ -148,7 +151,7 @@ func (s *Server) SendSuccessEmail(to string) error {
 	%s
 	</p>`, total, forTheTeam, avg, officeMsg, teamsMsg, officeTotals)
 
-	return EmailSender.SendEmail(to, "Success!", msg)
+	return EmailSender.SendEmail(to, subject, msg, replyMessageID)
 }
 
 // extractEmailAddr gets the email address from the email string

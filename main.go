@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -104,10 +105,13 @@ func init() {
 // We expect the database to have these exact values
 // TODO: it would be interesting to figure out how to have this dynamic (display too) and based off the email they send to
 const (
-	PullUps  = "Pull Ups"
-	SitUps   = "Sit Ups"
-	PushUps  = "Push Ups"
-	Squats   = "Squats"
+	PullUps = "Pull Ups"
+	SitUps  = "Sit Ups"
+	PushUps = "Push Ups"
+	Squats  = "Squats"
+)
+
+var (
 	OldEmail = "pullups-pushups-airsquats-situps@countmyreps.com"
 	NewEmail = "pullups-pushups-squats-situps@countmyreps.com"
 )
@@ -128,7 +132,7 @@ func main() {
 
 	// defaults for start and end vars
 	startDefault := fmt.Sprintf("%d-11-01", time.Now().Year())
-	endDefault := fmt.Sprintf("%d-11-31", time.Now().Year())
+	endDefault := fmt.Sprintf("%d-11-30", time.Now().Year())
 
 	// get flags
 	flag.IntVar(&port, "port", 9126, "port to run site")
@@ -139,6 +143,8 @@ func main() {
 	flag.StringVar(&mysqlUser, "mysql-user", "root", "mysql root")
 	flag.StringVar(&mysqlPass, "mysql-pass", "", "mysql pass")
 	flag.StringVar(&mysqlDBname, "mysql-dbname", "countmyreps", "mysql dbname")
+	flag.StringVar(&OldEmail, "old-email", "pullups-pushups-airsquats-situps@countmyreps.com", "email to receive from")
+	flag.StringVar(&NewEmail, "new-email", "pullups-pushups-squats-situps@countmyreps.com", "email to receive from")
 	flag.BoolVar(&Debug, "debug", false, "set flag for verbose logging")
 
 	flagenv.Parse()
@@ -147,11 +153,11 @@ func main() {
 	// validate flags
 	StartDate, err = time.Parse("2006-01-02", start)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("err parsing date", err)
 	}
 	EndDate, err = time.Parse("2006-01-02", end)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("err parsing date", err)
 	}
 
 	db := SetupDB(mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlDBname)
@@ -251,6 +257,22 @@ func errorHandler(w http.ResponseWriter, r *http.Request, code int, message stri
 	w.Write([]byte(fmt.Sprintf("%v - %s", http.StatusText(code), message)))
 }
 
+func getMessageIDFromHeader(s string) string {
+	r := regexp.MustCompile("\r?\n")
+	for _, line := range r.Split(s, -1) {
+		if strings.Contains(line, "Message-ID") {
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) != 2 {
+				return ""
+			}
+
+			return strings.TrimSpace(parts[1])
+		}
+	}
+
+	return ""
+}
+
 // ParseHandler handles SendGrid's inbound parse api
 func (s *Server) ParseHandler(w http.ResponseWriter, r *http.Request) {
 	// NOTE: SendGrid's Inbound Parse API requires a 200 level response always, even on error, otherwise it will retry
@@ -262,6 +284,8 @@ func (s *Server) ParseHandler(w http.ResponseWriter, r *http.Request) {
 	to := r.PostFormValue("to")
 	from := r.PostFormValue("from")
 	subject := r.PostFormValue("subject")
+	headers := r.PostFormValue("headers")
+	replyMessageID := getMessageIDFromHeader(headers)
 
 	logEvent(r, "parseapi", fmt.Sprintf("To: %s, From: %s, Subject: %s", to, from, subject))
 
@@ -273,11 +297,11 @@ func (s *Server) ParseHandler(w http.ResponseWriter, r *http.Request) {
 			// only send a response if the subject looked vaguely correct or the sender was from sendgrid.
 			parts := strings.Split(subject, ",")
 			if strings.Contains(from, "@sendgrid.com") || len(parts) == 4 {
-				err = s.SendErrorEmail(from, to, subject, errMsg)
+				err = s.SendErrorEmail(from, to, subject, errMsg, replyMessageID)
 			}
 		} else {
 			mailType = "success"
-			err = s.SendSuccessEmail(from)
+			err = s.SendSuccessEmail(from, subject, replyMessageID)
 		}
 		if err != nil {
 			logError(r, err, "unable to send response email: "+mailType)
