@@ -10,3 +10,6 @@ countmyreps-new
 vendor
 .DS_Store
 setup/.DS_Store
+creds.json
+.idea
+v2/.idea
