@@ -14,6 +14,9 @@ type Config struct {
 	RemoveDBOnShutdown bool   `envconfig:"remove_db_on_shutdown" default:"false"`
 	GoogleCredsPath    string `envconfig:"google_creds_path" default:"../../creds.json"`
 
+	// FilesPath defaults to a relative directory to the running binary of ./files. Specify a full path to point to something else
+	FilesPath string `envconfig:"files_path" default:"files"`
+
 	// When set to true, the server will not contact Google OAuth2. Instead, the handler will take the passed in `code` and store that as the user's email address
 	DevMode bool `envconfig:"dev_mode" default:"false"`
 	// computed
