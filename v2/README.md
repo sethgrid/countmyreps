@@ -37,6 +37,24 @@ go build .
 
 ## API
 
+#### Authentication
+Using Google oAuth2. A user clicks “sign in with google” and the callback url will be `{localhost:5000 | countmyreps.com}/auth` with args `state`, `code`, `scope`, `authuser`, `hd`, and `prompt`. Of these, we need to validate from the sign in page that the `state` we set (currently not exposed) is the `state` we get back. 
+
+Then we pass the `code` value to the GET `/v3/token?code={:code:}` endpoint to receive the bearer token. This will be used in all authenticated requests as header `Authorization: Bearer {:token:}`. The token is good from 60 minutes or until server restart
+
+`GET /v3/token`
+
+`Options: ?code={:code:}`
+
+Response:
+
+```
+{ “Token”: “some token” }
+```
+
+All the following endpoints require the header `Authorization: Bearer {:token:}`
+
+
 Get All Exercise Options and their Type (“reps”, “km”, “minutes”, etc)
 
 `GET /v3/exercises`

@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi"
 )
@@ -20,9 +21,15 @@ func (s *Server) setRoutes(mux *chi.Mux) {
 	mux.Get("/login", s.LoginHander)
 	mux.Get("/auth", s.AuthHandler)
 
+	mux.Get("/v3/token", s.TokenHandler)
+
 	// authenticated endpoints
-	mux.Get("/stats", s.StatsHandler)
-	mux.Get("/exercises", s.GetExercises)
+	mux.Route("/v3", func(r chi.Router) {
+		r.With(s.authMiddleware).Get("/exercises", s.GetExercises)
+		r.With(s.authMiddleware).Get("/stats", s.GetStats)
+		r.With(s.authMiddleware).Post("/stats", s.PostStats)
+	})
+
 }
 
 // on the front end, after a user signs in:
@@ -43,6 +50,69 @@ xhr.onload = function() {
 };
 xhr.send('idtoken=' + id_token);
 */
+
+const ctxEmail = "ctxEmail"
+const ctxUID = "ctxUID"
+
+// TODO: rate limit? caddy server limits total requests at a time, but not by IP I think
+func (s *Server) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO: allow auth bypass for local dev?
+		Bearer := r.Header.Get("Authorization")
+		if !strings.HasPrefix(strings.ToLower(Bearer), "bearer ") { // note the space is required
+			http.Error(w, "Authorization: Bearer $token required in header", http.StatusBadRequest)
+			return
+		}
+		// "Bearer $token"
+		parts := strings.Split(Bearer, " ")
+		t, ok := s.tokenCache.Get(parts[1])
+		if !ok {
+			http.Error(w, "invalid token", http.StatusBadRequest)
+			return
+		}
+		token, ok := t.(Token)
+		if !ok {
+			log.Println("unexpected token failure - bad type")
+			http.Error(w, "unexpected invalid token", http.StatusBadRequest)
+			return
+		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, ctxEmail, token.email)
+		ctx = context.WithValue(ctx, ctxUID, token.uid)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) TokenHandler(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		http.Error(w, "missing param: code", http.StatusBadRequest)
+		return
+	}
+
+	oAuth, err := s.oAuthValidate(code)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	uid, err := s.getOrCreateUser(oAuth.Email)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	token, err := s.createAndStoreToken(uid, oAuth.Email)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(token)
+}
 
 func (s *Server) RootHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`
@@ -88,55 +158,67 @@ type googleAuthResp struct {
 	HD            string `json:"hd"`
 }
 
-func (s *Server) AuthHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO - retreive csrfState
-	// compare it to query state
-	csrfStateVerify := r.URL.Query().Get("state")
-	_ = csrfStateVerify
-
-	code := r.URL.Query().Get("code")
+// oAuthValidate returns the email address of the signed in user via Google OAuthv2, or an error
+func (s *Server) oAuthValidate(code string) (*googleAuthResp, error) {
 	tok, err := s.oAuthConf.Exchange(context.Background(), code)
 	if err != nil {
 		log.Println("error with exchange", err)
-		http.Error(w, "unable to validate exchange", http.StatusBadRequest)
-		return
+		return nil, fmt.Errorf("unalbe to oAuthValidate with exchange: %w", err)
 	}
 
 	client := s.oAuthConf.Client(context.Background(), tok)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
 	if err != nil {
 		log.Println("error getting google api user info", err)
-		http.Error(w, "unable to get user info from google", http.StatusBadRequest)
-		return
+		return nil, fmt.Errorf("unalbe to oAuthValidate client get: %w", err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("error reading google api user info", err)
-		http.Error(w, "unable to read user info from google", http.StatusBadRequest)
-		return
+		return nil, fmt.Errorf("unalbe to oAuthValidate read body: %w", err)
 	}
-	log.Println("google api resp body: ", string(body))
 
 	var authResp googleAuthResp
 	err = json.Unmarshal(body, &authResp)
 	if err != nil {
 		log.Println("error marshalling google api user info", err)
-		http.Error(w, "unable to marshall user info from google", http.StatusBadRequest)
-		return
+		return nil, fmt.Errorf("unable to oAuthValidate marshal: %w", err)
 	}
 
-	// store authResp onto context or state?
-	// redirect to app data page
-	http.Redirect(w, r, "/stats", http.StatusTemporaryRedirect)
+	if !strings.HasSuffix(authResp.Email, "twilio.com") {
+		return nil, fmt.Errorf("invalid email address: twilio.com required")
+	}
+
+	return &authResp, nil
 }
 
-func (s *Server) StatsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(fmt.Sprintf("you must be logged in to view this page. <a href='https://www.google.com/accounts/Logout?continue=https://appengine.google.com/_ah/logout?continue=%s'>Click to log out</a>", s.conf.FullAddr)))
+func (s *Server) AuthHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: have this page serve SPA stuff.
+	// For now, redirect to the token handler to make it easy to get the token for manual curl testing
+	s.TokenHandler(w, r)
+}
+
+func (s *Server) GetStats(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (s *Server) PostStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetExercises(w http.ResponseWriter, r *http.Request) {
+	uid, _ := r.Context().Value(ctxUID).(int)
+	log.Printf("user validated to be uid %d", uid)
+	data, err := s.getExercises()
+	if err != nil {
+		log.Println("error GetExercises ", err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Println("GetExercises marshal err ", err.Error())
+	}
 }
 
 func (s *Server) PrivacyHandler(w http.ResponseWriter, r *http.Request) {

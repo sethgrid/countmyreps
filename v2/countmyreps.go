@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/go-chi/chi"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/patrickmn/go-cache"
 	"github.com/sethgrid/countmyreps/v2/config"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -32,10 +34,14 @@ type Server struct {
 	httpSrv     *http.Server
 	googleCreds Credentials
 	oAuthConf   *oauth2.Config
+	tokenCache  *cache.Cache
+	rand        *rand.Rand
 }
 
 func NewServer(c *config.Config) (*Server, error) {
 	s := &Server{conf: c}
+	s.tokenCache = cache.New(60*time.Minute, 15*time.Minute)
+	s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	if err := c.Sanitize(); err != nil {
 		return nil, err
@@ -97,6 +103,8 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Close() error {
+	defer s.DB.Close()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer func() {
 		// extra handling here
@@ -115,8 +123,27 @@ func (s *Server) Close() error {
 	return nil
 }
 
-type Exercise struct {
-	Name      string
-	ValueType string
-	Value     int
+type Token struct {
+	Token string
+	email string
+	uid   int
+}
+
+// createAndStoreToken returns a random string of valid characters for a bearer token. It can return an error to be future proof if we change the token storage mechanism
+func (s *Server) createAndStoreToken(uid int, email string) (Token, error) {
+	t := Token{email: email, uid: uid, Token: s.RandStringRunes(48)}
+	// stores with default timeout (60 min)
+	s.tokenCache.Add(t.Token, t, -1)
+
+	return t, nil
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/-_0123456789")
+
+func (s *Server) RandStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[s.rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }

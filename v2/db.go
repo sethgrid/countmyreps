@@ -78,6 +78,72 @@ func init() {
 	}
 }
 
+type Exercises struct {
+	Collection []Exercise `json:"Exercises"`
+}
+
+type Exercise struct {
+	ID        int
+	Name      string
+	ValueType string
+}
+
+func (s *Server) getExercises() (*Exercises, error) {
+	q := "SELECT id, name, value_type FROM exercises"
+	rows, err := s.DB.Query(q)
+	if err != nil {
+		return nil, fmt.Errorf("unable to getExercises: %w", err)
+	}
+
+	exs := &Exercises{Collection: make([]Exercise, 0)}
+
+	for rows.Next() {
+		var id int
+		var name, valueType string
+		err := rows.Scan(&id, &name, &valueType)
+		if err != nil {
+			return nil, fmt.Errorf("unable to scan getExercises: %w", err)
+		}
+		exs.Collection = append(exs.Collection, Exercise{ID: id, Name: name, ValueType: valueType})
+	}
+
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("unexpected error after scanning getExercises: %w", err)
+	}
+
+	return exs, nil
+}
+
+func (s *Server) getOrCreateUser(email string) (int, error) {
+	q := "select id from users where email = ?;"
+	row := s.DB.QueryRow(q, email)
+
+	var id int
+	err := row.Scan(&id)
+	if err != nil && err != sql.ErrNoRows {
+		return 0, fmt.Errorf("unable to scan users: %w", err)
+	}
+
+	if id != 0 {
+		return id, nil
+	}
+
+	// no id returned; time to create the user
+
+	stmt := "insert into users (email) values (?);"
+	res, err := s.DB.Exec(stmt, email)
+	if err != nil {
+		return 0, fmt.Errorf("unable to insert into users: %w", err)
+	}
+	newID, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("unable to get id from new insert into users: %w", err)
+	}
+
+	// could overflow in a 32 bit system. Very unlikely in our case as we are limited to twilio.com addrs :p
+	return int(newID), nil
+}
+
 func (s *Server) InitDB() error {
 	_, err := os.Stat(s.conf.DBPath)
 	if err != nil && !os.IsNotExist(err) {
