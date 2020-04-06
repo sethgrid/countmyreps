@@ -16,7 +16,7 @@ go build .
 ./countmyreps
 ```
 
-When the service starts up, it will create `./cmy.db` (a sqlite3 db) and initially populate it with exercise types and default teams.
+When the service starts up, it will create `./cmy.db` (a sqlite3 db) and initially populate it with exercise types and default teams. You can use a gui such as https://sqlitebrowser.org/ to browse data.
 
 
 For Google Sign In, you will have to create a project on console.cloud.google.com. See https://skarlso.github.io/2016/06/12/google-signin-with-go/.
