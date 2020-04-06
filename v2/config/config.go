@@ -1,6 +1,10 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+	"strings"
+)
 
 type Config struct {
 	UseHTTPS           bool   `envconfig:"use_https" default:"true"`
@@ -10,6 +14,8 @@ type Config struct {
 	RemoveDBOnShutdown bool   `envconfig:"remove_db_on_shutdown" default:"false"`
 	GoogleCredsPath    string `envconfig:"google_creds_path" default:"../../creds.json"`
 
+	// When set to true, the server will not contact Google OAuth2. Instead, the handler will take the passed in `code` and store that as the user's email address
+	DevMode bool `envconfig:"dev_mode" default:"false"`
 	// computed
 	FullAddr string
 }
@@ -18,6 +24,11 @@ type Config struct {
 func (c *Config) Sanitize() error {
 	if c.DBPath == "" {
 		return fmt.Errorf("db_path cannot be empty")
+	}
+
+	if c.DevMode && !strings.Contains(c.Addr, "localhost") {
+		log.Println("dev mode disabled when addr is not localhost")
+		c.DevMode = false
 	}
 
 	scheme := "https"

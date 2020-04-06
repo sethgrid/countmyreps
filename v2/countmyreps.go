@@ -28,6 +28,9 @@ type Credentials struct {
 }
 
 type Server struct {
+	// DevMode tells the server to not contact Google for OAuth, but to instead use `code` as `email` in the fake OAuth Response
+	DevMode bool
+
 	DB *sql.DB
 
 	conf        *config.Config
@@ -39,7 +42,7 @@ type Server struct {
 }
 
 func NewServer(c *config.Config) (*Server, error) {
-	s := &Server{conf: c}
+	s := &Server{conf: c, DevMode: c.DevMode}
 	s.tokenCache = cache.New(60*time.Minute, 15*time.Minute)
 	s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 

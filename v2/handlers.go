@@ -160,6 +160,10 @@ type googleAuthResp struct {
 
 // oAuthValidate returns the email address of the signed in user via Google OAuthv2, or an error
 func (s *Server) oAuthValidate(code string) (*googleAuthResp, error) {
+	if s.DevMode {
+		return &googleAuthResp{Email: code}, nil
+	}
+
 	tok, err := s.oAuthConf.Exchange(context.Background(), code)
 	if err != nil {
 		log.Println("error with exchange", err)

@@ -22,7 +22,7 @@ When the service starts up, it will create `./cmy.db` (a sqlite3 db) and initial
 For Google Sign In, you will have to create a project on console.cloud.google.com. See https://skarlso.github.io/2016/06/12/google-signin-with-go/.
 Create an OAauth2 Client ID and Secret. These are used to verifiy logged in users.
 
-For local development, start the service binary with `-local-dev=true`. This will allow you to access APIs normally blocked by requiring the X-GOOGLE-TOKEN header. 
+For local development, start the service binary with the env var `COUNTMY_REPS_DEV_MODE=true`. This will allow you to access APIs by allowing you to generate the bearer token without authenticating with Google. Hit `http://localhost:5000/auth?code=newuser@twilio.com` to generate a new bearer token.
 
 ### Compiling for Linux from Mac?
 
@@ -40,7 +40,9 @@ go build .
 #### Authentication
 Using Google oAuth2. A user clicks “sign in with google” and the callback url will be `{localhost:5000 | countmyreps.com}/auth` with args `state`, `code`, `scope`, `authuser`, `hd`, and `prompt`. Of these, we need to validate from the sign in page that the `state` we set (currently not exposed) is the `state` we get back. 
 
-Then we pass the `code` value to the GET `/v3/token?code={:code:}` endpoint to receive the bearer token. This will be used in all authenticated requests as header `Authorization: Bearer {:token:}`. The token is good from 60 minutes or until server restart
+Then we pass the `code` value to the GET `/v3/token?code={:code:}` endpoint to receive the bearer token. This will be used in all authenticated requests as header `Authorization: Bearer {:token:}`. The token is good from 60 minutes or until server restart.
+
+If the service was started with the environment variable `COUNTMYREPS_DEV_MODE=true`, then the `code` value will always validate successfully and store the value as the user's email address. I.E.: `?code=newuser@twilio.com`. 
 
 `GET /v3/token`
 
