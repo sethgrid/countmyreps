@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -39,10 +40,21 @@ type Server struct {
 	oAuthConf   *oauth2.Config
 	tokenCache  *cache.Cache
 	rand        *rand.Rand
+
+	mu             *sync.Mutex
+	exerciseByID   map[int]Exercise
+	exerciseByName map[string]Exercise
 }
 
 func NewServer(c *config.Config) (*Server, error) {
-	s := &Server{conf: c, DevMode: c.DevMode}
+	s := &Server{
+		conf:           c,
+		DevMode:        c.DevMode,
+		mu:             &sync.Mutex{},
+		exerciseByID:   make(map[int]Exercise),
+		exerciseByName: make(map[string]Exercise),
+	}
+
 	s.tokenCache = cache.New(60*time.Minute, 15*time.Minute)
 	s.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -124,6 +136,30 @@ func (s *Server) Close() error {
 		}
 	}
 	return nil
+}
+
+func (s *Server) getExerciseByName(name string) (Exercise, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.exerciseByName) == 0 {
+		s.mu.Unlock()
+		s.getExercises()
+		s.mu.Lock()
+	}
+	e, ok := s.exerciseByName[name]
+	return e, ok
+}
+
+func (s *Server) getExerciseByID(id int) (Exercise, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.exerciseByID) == 0 {
+		s.mu.Unlock()
+		s.getExercises()
+		s.mu.Lock()
+	}
+	e, ok := s.exerciseByID[id]
+	return e, ok
 }
 
 type Token struct {

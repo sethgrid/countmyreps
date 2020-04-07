@@ -9,7 +9,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi"
 )
@@ -185,6 +187,7 @@ type googleAuthResp struct {
 // oAuthValidate returns the email address of the signed in user via Google OAuthv2, or an error
 func (s *Server) oAuthValidate(code string) (*googleAuthResp, error) {
 	if s.DevMode {
+		log.Printf("dev mode enabled, setting email as code value of %s", code)
 		return &googleAuthResp{Email: code}, nil
 	}
 
@@ -228,15 +231,56 @@ func (s *Server) AuthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetStats(w http.ResponseWriter, r *http.Request) {
+	uid, _ := r.Context().Value(ctxUID).(int)
+	startDate := r.URL.Query().Get("startdate")
+	endDate := r.URL.Query().Get("enddate")
 
+	start, _ := strconv.Atoi(startDate)
+	end, _ := strconv.Atoi(endDate)
+
+	if start == 0 {
+		start = int(time.Now().Add(-31 * 24 * time.Hour).Unix())
+	}
+	if end == 0 {
+		end = int(time.Now().Add(24 * time.Hour).Unix())
+	}
+
+	stats, err := s.getStats([]int{uid}, start, end)
+	if err != nil {
+		log.Printf("unable to getStats: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(stats)
 }
 
 func (s *Server) PostStats(w http.ResponseWriter, r *http.Request) {
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	var exs Exercises
+	err = json.Unmarshal(reqBody, &exs)
+	if err != nil {
+		log.Printf("bad unmarshalling: %s, %s", err.Error(), string(reqBody))
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	uid, _ := r.Context().Value(ctxUID).(int)
+	err = s.postStats(uid, exs)
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *Server) GetExercises(w http.ResponseWriter, r *http.Request) {
-	uid, _ := r.Context().Value(ctxUID).(int)
-	log.Printf("user validated to be uid %d", uid)
 	data, err := s.getExercises()
 	if err != nil {
 		log.Println("error GetExercises ", err.Error())
