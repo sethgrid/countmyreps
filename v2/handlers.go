@@ -28,8 +28,18 @@ func (s *Server) setRoutes(mux *chi.Mux) {
 	// authenticated endpoints
 	mux.Route("/v3", func(r chi.Router) {
 		r.With(s.authMiddleware).Get("/exercises", s.GetExercises)
+
 		r.With(s.authMiddleware).Get("/stats", s.GetStats)
 		r.With(s.authMiddleware).Post("/stats", s.PostStats)
+
+		r.With(s.authMiddleware).Get("/teams", s.GetTeams)
+		r.With(s.authMiddleware).Post("/teams", s.PostTeams)
+		r.With(s.authMiddleware).Delete("/team/{teamID}", s.DeleteTeam)
+
+		r.With(s.authMiddleware).Get("/myteams", s.GetMyTeams)
+		r.With(s.authMiddleware).Post("/myteams/{teamID}", s.PostMyTeams)
+		r.With(s.authMiddleware).Delete("/myteams/{teamID}", s.DeleteMyTeams)
+
 	})
 
 	filesDir := http.Dir(s.conf.FilesPath)
@@ -284,13 +294,145 @@ func (s *Server) GetExercises(w http.ResponseWriter, r *http.Request) {
 	data, err := s.getExercises()
 	if err != nil {
 		log.Println("error GetExercises ", err.Error())
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		log.Println("GetExercises marshal err ", err.Error())
 	}
+}
+
+func (s *Server) GetTeams(w http.ResponseWriter, r *http.Request) {
+	data, err := s.getAllTeams(-1)
+	if err != nil {
+		log.Println("error GetTeams ", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Println("GetTeams marshal err ", err.Error())
+	}
+}
+func (s *Server) PostTeams(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(ctxUID).(int)
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Println("error reading body PostTeams: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	team := &Team{}
+
+	err = json.Unmarshal(body, team)
+	if err != nil {
+		log.Println("error marshalling body PostTeams: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if team.Name == "" {
+		http.Error(w, "team name required", http.StatusBadRequest)
+		return
+	}
+
+	newTeam, err := s.postTeam(team.Name, uid)
+	if err != nil {
+		log.Printf("error postTeam %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(newTeam); err != nil {
+		log.Println("PostTeams marshal err ", err.Error())
+	}
+}
+
+func (s *Server) DeleteTeam(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(ctxUID).(int)
+	teamID, err := strconv.Atoi(chi.URLParam(r, "teamID"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if teamID <= 0 {
+		http.Error(w, "teamid must be > 0", http.StatusBadRequest)
+		return
+	}
+
+	err = s.deleteTeam(teamID, uid)
+	if err != nil {
+		log.Println("unable to DeleteTeam: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) GetMyTeams(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(ctxUID).(int)
+	data, err := s.getMyTeams(uid)
+	if err != nil {
+		log.Println("unable to GetMyTeams: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Println("GetMyTeams marshal err ", err.Error())
+	}
+}
+
+func (s *Server) GetTeamsCreatedByUser(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(ctxUID).(int)
+	data, err := s.getAllTeams(uid)
+	if err != nil {
+		log.Println("error GetMyTeams ", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Println("GeTeamsCreatedByUser marshal err ", err.Error())
+	}
+}
+
+func (s *Server) PostMyTeams(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(ctxUID).(int)
+	teamID, err := strconv.Atoi(chi.URLParam(r, "teamID"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = s.postMyTeams(teamID, uid)
+	if err != nil {
+		log.Println("unable to PostMyTeams: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (s *Server) DeleteMyTeams(w http.ResponseWriter, r *http.Request) {
+	uid := r.Context().Value(ctxUID).(int)
+	teamID, err := strconv.Atoi(chi.URLParam(r, "teamID"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = s.deleteMyTeams(teamID, uid)
+	if err != nil {
+		log.Println("unable to PostMyTeams: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) PrivacyHandler(w http.ResponseWriter, r *http.Request) {

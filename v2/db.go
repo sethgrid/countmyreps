@@ -106,7 +106,7 @@ func (s *Server) getStats(uids []int, start, end int) ([]Stats, error) {
 
 	q := fmt.Sprintf("SELECT exercise_id, count, created_on FROM reps where created_on>=? and created_on<=? and user_id in (%s)", strings.Join(uidStrs, ","))
 	rows, err := s.DB.Query(q, start, end)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return nil, fmt.Errorf("unable to getStats: %w", err)
 	}
 
@@ -173,7 +173,7 @@ func (s *Server) postStats(uid int, exs Exercises) error {
 func (s *Server) getExercises() (*Exercises, error) {
 	q := fmt.Sprintf("SELECT id, name, value_type FROM exercises")
 	rows, err := s.DB.Query(q)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return nil, fmt.Errorf("unable to getExercises: %w", err)
 	}
 
@@ -215,6 +215,152 @@ func (s *Server) getExercises() (*Exercises, error) {
 	s.mu.Unlock()
 
 	return exs, nil
+}
+
+type Teams struct {
+	Collection []Team `json:"Teams"`
+}
+
+type Team struct {
+	Name string
+	ID   int
+}
+
+// getAllTeams for the given uid. If the uid is <0, return all teams
+func (s *Server) getAllTeams(uid int) (*Teams, error) {
+	var q string
+	var rows *sql.Rows
+	var err error
+
+	if uid < 0 {
+		q = "select id, name from teams"
+		rows, err = s.DB.Query(q)
+	} else {
+		q = "select id, name from teams where created_by_user_id = ?"
+		rows, err = s.DB.Query(q, uid)
+	}
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, fmt.Errorf("unable to query getAllTeams: %w", err)
+	}
+	teams := &Teams{Collection: make([]Team, 0)}
+	for rows.Next() {
+		var id int
+		var name string
+		err := rows.Scan(&id, &name)
+		if err != nil {
+			return nil, fmt.Errorf("unable to scan getAllTeams: %w", err)
+		}
+		teams.Collection = append(teams.Collection, Team{ID: id, Name: name})
+	}
+
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("unexpected error after scanning getAllTeams: %w", err)
+	}
+
+	return teams, nil
+}
+
+// getTeamByName will return nil if no team exists
+func (s *Server) getTeamByName(teamName string) (*Team, error) {
+	q := "select id, name from teams where name=?"
+	row := s.DB.QueryRow(q, teamName)
+
+	var id int
+	var name string
+	err := row.Scan(&id, &name)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, fmt.Errorf("unable to scan getTeamByName: %w", err)
+	}
+
+	if id == 0 {
+		return nil, nil
+	}
+
+	return &Team{ID: id, Name: name}, nil
+}
+
+func (s *Server) postTeam(teamName string, uid int) (*Team, error) {
+	existingTeam, err := s.getTeamByName(teamName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to postTeam: %w", err)
+	}
+	if existingTeam != nil {
+		return existingTeam, nil
+	}
+
+	q := "insert into teams (name, created_by_user_id) values (?,?)"
+	res, err := s.DB.Exec(q, teamName, uid)
+	if err != nil {
+		return nil, fmt.Errorf("unable to insert teamName: %w", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get last insert id for teamName: %w", err)
+	}
+
+	err = s.postMyTeams(int(id), uid)
+	if err != nil {
+		return nil, fmt.Errorf("unable to associate new team to user in postTeam: %w", err)
+	}
+
+	return &Team{ID: int(id), Name: teamName}, nil
+}
+
+func (s *Server) deleteTeam(teamID, uid int) error {
+	q := "delete from teams where id=? and created_by_user_id=?"
+	_, err := s.DB.Exec(q, teamID, uid)
+	if err != nil {
+		return fmt.Errorf("unable to deleteTeam: %w", err)
+	}
+	return nil
+}
+
+func (s *Server) getMyTeams(uid int) (*Teams, error) {
+	q := "select team_id, name from user_teams left join teams on user_teams.team_id=teams.id where user_id=?"
+	rows, err := s.DB.Query(q, uid)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query getMyTeams: %w", err)
+	}
+
+	teams := &Teams{Collection: make([]Team, 0)}
+	for rows.Next() {
+		var teamID int
+		var name string
+		err := rows.Scan(&teamID, &name)
+		if err != nil {
+			return nil, fmt.Errorf("unable to scan getMyTeams: %w", err)
+		}
+		teams.Collection = append(teams.Collection, Team{ID: teamID, Name: name})
+	}
+
+	return teams, nil
+}
+
+func (s *Server) postMyTeams(teamID, uid int) error {
+	// easy way to prevent duplicates; remove the pairing if it already exists
+	err := s.deleteMyTeams(teamID, uid)
+	if err != nil {
+		return fmt.Errorf("unable to postMyTeams: %w", err)
+	}
+
+	q := "insert into user_teams (team_id, user_id) values (?, ?)"
+	log.Printf("about to run %s (%d, %d)", q, teamID, uid)
+	_, err = s.DB.Exec(q, teamID, uid)
+	if err != nil {
+		return fmt.Errorf("unable to postMyTeams: %w", err)
+	}
+	log.Println("no error")
+	return nil
+}
+
+func (s *Server) deleteMyTeams(teamID, uid int) error {
+	q := "delete from user_teams where team_id=? and user_id=?"
+	_, err := s.DB.Exec(q, teamID, uid)
+	if err != nil {
+		return fmt.Errorf("unable to deleteMyTeam: %w", err)
+	}
+	return nil
 }
 
 func (s *Server) getOrCreateUser(email string) (int, error) {

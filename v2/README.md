@@ -105,6 +105,7 @@ Response:
 #### `GET /v3/stats`
 #### `GET /v3/stats/user/{:user_email:}`
 #### `GET /v3/stats/team/{:team_id:}`
+#### `GET /v3/stats/all`
 Options: `?startdate={:unix_ts:}&enddate={:unix_ts}`
 
 Get the stats for all users, a particular user, or a particular team. Default start date is 31 days ago. Default end date is tomorrow. If there is any issue parsing the dates, they go to defaults silently.
@@ -124,42 +125,58 @@ Response:
 }
 ```
 
+#### GET /v3/teams
+Get teams (all teams, not just the signed in user’s teams. See /v3/myteams)
+```
+{
+  “Teams”: [{
+    “Name”: “Irvine”,
+    “ID”: 4
+  }]
+}
+```
+
+#### POST /v3/teams
 Create a Team
-POST /v3/teams
+
+Request
+```
 {
-  “Team”: “Irvine”
+  “Name”: “Irvine”
 }
+```
 Resp:
-201
-
-Delete a Team (maybe not expose this one? Limit its access to its creator?)
-DELETE /v3/teams
 {
-  “TeamID”: 4
+  “Team”: “Irvine”,
+  "ID": 3
 }
 
-Get teams (all teams, not the signed in user’s teams)
-GET /v3/teams
-{
-  “Teams”: [{
-    “Name”: “Irvine”,
-    “ID”: 4
-  }]
-}
+#### DELETE /v3/teams/{:team_id:}
+Delete a Team (you can only delete a team you created)
 
-Join a Team
-POST /v3/myteams/id/{:team_id:}
-Resp: 201
+Resp: 204
 
-Leave a Team
-DELETE /v3/myteams/id/{:team_id:}
-Resp: 201
-
+### GET /v3/myteams
 See what teams you are on
-GET /v3/myteams
+
+Resp:
+```
 {
   “Teams”: [{
     “Name”: “Irvine”,
     “ID”: 4
   }]
+}
+```
+
+### POST /v3/myteams/id/{:team_id:}
+Join a Team
+
+Resp: 201
+
+### DELETE /v3/myteams/id/{:team_id:}
+Leave a Team
+
+Resp: 204
+
 
