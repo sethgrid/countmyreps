@@ -104,13 +104,16 @@ func (s *Server) getStats(uids []int, start, end int) ([]Stats, error) {
 		uidStrs = append(uidStrs, fmt.Sprintf("%d", uid))
 	}
 
-	q := fmt.Sprintf("SELECT exercise_id, count, created_on FROM reps where created_on>=? and created_on<=? and user_id in (%s)", strings.Join(uidStrs, ","))
+	q := "SELECT exercise_id, count, created_on FROM reps where created_on>=? and created_on<=?"
+
+	if len(uids) > 0 {
+		q += fmt.Sprintf(" and user_id in (%s)", strings.Join(uidStrs, ","))
+	}
+
 	rows, err := s.DB.Query(q, start, end)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, fmt.Errorf("unable to getStats: %w", err)
 	}
-
-	log.Printf("stats q: %s (%s, %s)", q, start, end)
 
 	m := make(map[string][]Exercise)
 
@@ -136,6 +139,42 @@ func (s *Server) getStats(uids []int, start, end int) ([]Stats, error) {
 	}
 
 	return stats, nil
+}
+func (s *Server) getStatsForTeam(teamID int, start, end int) ([]Stats, error) {
+	q := "SELECT exercise_id, count, created_on FROM reps where created_on>=? and created_on<=? and user_id in (select user_id from user_teams where team_id=?)"
+
+	rows, err := s.DB.Query(q, start, end, teamID)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, fmt.Errorf("unable to getStatsForTeam: %w", err)
+	}
+
+	log.Printf("stats q: %s (%d, %d, %d)", q, start, end, teamID)
+
+	m := make(map[string][]Exercise)
+
+	for rows.Next() {
+		var exerciseID, count int
+		var createdOn string
+		err := rows.Scan(&exerciseID, &count, &createdOn)
+		if err != nil {
+			return nil, fmt.Errorf("unable to scan getStatsForTeam: %w", err)
+		}
+		ex, _ := s.getExerciseByID(exerciseID)
+		m[createdOn] = append(m[createdOn], Exercise{ID: exerciseID, Name: ex.Name, ValueType: ex.ValueType, Count: count})
+	}
+
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("unexpected error after scanning getStatsForTeam: %w", err)
+	}
+
+	var stats []Stats
+
+	for createdOn, exs := range m {
+		stats = append(stats, Stats{Date: createdOn, Collection: exs})
+	}
+
+	return stats, nil
+
 }
 
 func (s *Server) postStats(uid int, exs Exercises) error {
@@ -345,12 +384,11 @@ func (s *Server) postMyTeams(teamID, uid int) error {
 	}
 
 	q := "insert into user_teams (team_id, user_id) values (?, ?)"
-	log.Printf("about to run %s (%d, %d)", q, teamID, uid)
 	_, err = s.DB.Exec(q, teamID, uid)
 	if err != nil {
 		return fmt.Errorf("unable to postMyTeams: %w", err)
 	}
-	log.Println("no error")
+
 	return nil
 }
 

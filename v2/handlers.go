@@ -31,6 +31,8 @@ func (s *Server) setRoutes(mux *chi.Mux) {
 
 		r.With(s.authMiddleware).Get("/stats", s.GetStats)
 		r.With(s.authMiddleware).Post("/stats", s.PostStats)
+		r.With(s.authMiddleware).Post("/stats/all", s.GetStatsAll)
+		r.With(s.authMiddleware).Get("/stats/team/{teamID}", s.GetStatsForTeam)
 
 		r.With(s.authMiddleware).Get("/teams", s.GetTeams)
 		r.With(s.authMiddleware).Post("/teams", s.PostTeams)
@@ -242,6 +244,47 @@ func (s *Server) AuthHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetStats(w http.ResponseWriter, r *http.Request) {
 	uid, _ := r.Context().Value(ctxUID).(int)
+	start, end := getStartAndEndTS(r)
+	stats, err := s.getStats([]int{uid}, start, end)
+	if err != nil {
+		log.Printf("unable to getStats: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(stats)
+}
+
+func (s *Server) GetStatsAll(w http.ResponseWriter, r *http.Request) {
+	start, end := getStartAndEndTS(r)
+	stats, err := s.getStats([]int{}, start, end)
+	if err != nil {
+		log.Printf("unable to getStats: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(stats)
+}
+
+func (s *Server) GetStatsForTeam(w http.ResponseWriter, r *http.Request) {
+	teamID, err := strconv.Atoi(chi.URLParam(r, "teamID"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	start, end := getStartAndEndTS(r)
+	stats, err := s.getStatsForTeam(teamID, start, end)
+	if err != nil {
+		log.Printf("unable to getStatsForTeam: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(stats)
+}
+
+func getStartAndEndTS(r *http.Request) (int, int) {
 	startDate := r.URL.Query().Get("startdate")
 	endDate := r.URL.Query().Get("enddate")
 
@@ -255,14 +298,7 @@ func (s *Server) GetStats(w http.ResponseWriter, r *http.Request) {
 		end = int(time.Now().Add(24 * time.Hour).Unix())
 	}
 
-	stats, err := s.getStats([]int{uid}, start, end)
-	if err != nil {
-		log.Printf("unable to getStats: %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	json.NewEncoder(w).Encode(stats)
+	return start, end
 }
 
 func (s *Server) PostStats(w http.ResponseWriter, r *http.Request) {
