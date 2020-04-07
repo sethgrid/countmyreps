@@ -21,7 +21,9 @@ When the service starts up, it will create `./cmy.db` (a sqlite3 db) and initial
 For Google Sign In, you will have to create a project on console.cloud.google.com. See https://skarlso.github.io/2016/06/12/google-signin-with-go/.
 Create an OAauth2 Client ID and Secret. These are used to verifiy logged in users.
 
-For local development, start the service binary with the env var `COUNTMY_REPS_DEV_MODE=true`. This will allow you to access APIs by allowing you to generate the bearer token without authenticating with Google. Hit `http://localhost:5000/auth?code=newuser@twilio.com` to generate a new bearer token.
+After the service is running, you can go to http://localhost:5000/login to log in with Google. For local dev and to skip Google, you can do the following:
+
+Start the service binary with the env var `COUNTMY_REPS_DEV_MODE=true`. This will allow you to access APIs by allowing you to generate the bearer token without authenticating with Google. Hit `http://localhost:5000/auth?code=newuser@twilio.com` to generate a new bearer token.
 
 ```
 18:20:51 sethammons@sethammons:~/workspace/repos/countmyreps/v2 (git:new-version*:c1be7d3)
