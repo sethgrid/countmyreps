@@ -1,5 +1,5 @@
 -- Create syntax for TABLE 'office'
-CREATE TABLE `office` (
+CREATE TABLE IF NOT EXISTS `office` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL DEFAULT '',
   `head_count` int(11) DEFAULT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE `office` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 -- Create syntax for TABLE 'user'
-CREATE TABLE `user` (
+CREATE TABLE IF NOT EXISTS  `user` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL DEFAULT '',
   `office` int(11) unsigned DEFAULT '0',
@@ -18,7 +18,7 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 -- Create syntax for TABLE 'reps'
-CREATE TABLE `reps` (
+CREATE TABLE IF NOT EXISTS `reps` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` int(11) unsigned NOT NULL,
   `exercise` varchar(255) NOT NULL DEFAULT '',
